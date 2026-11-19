@@ -77,7 +77,8 @@ export function Inicio() {
   return (
     <div className="space-y-6">
       {/* Bienvenida */}
-      <header className="animar-aparecer gradiente-marca relative overflow-hidden rounded-3xl p-6 text-white shadow-md md:p-9">
+      <header className="animar-aparecer gradiente-marca hero-tech destello relative overflow-hidden rounded-3xl p-6 text-white shadow-lg md:p-9">
+        <span className="rejilla absolute inset-0" aria-hidden />
         <img src={edificio} alt="" aria-hidden className="absolute inset-0 size-full object-cover opacity-15 mix-blend-luminosity" />
         <span className="flotar absolute -top-10 right-10 size-44 rounded-full bg-white/10 blur-sm" aria-hidden />
         <span className="flotar absolute -right-8 bottom-4 size-28 rounded-full bg-white/10" style={{ animationDelay: '-3s' }} aria-hidden />

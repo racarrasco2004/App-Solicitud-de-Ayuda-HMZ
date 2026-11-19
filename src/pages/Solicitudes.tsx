@@ -139,7 +139,7 @@ export function Solicitudes() {
                 <tbody>
                   {filtradas.map((s) => (
                     <tr key={s.id} className="border-b border-linea last:border-0 hover:bg-uc-blue-light/50">
-                      <td className="px-3 py-3 font-bold whitespace-nowrap text-uc-purple-texto">{s.id}</td>
+                      <td className="px-3 py-3 font-mono font-bold whitespace-nowrap text-uc-purple-texto">{s.id}</td>
                       <td className="px-3 py-3 whitespace-nowrap">{fechaCorta(s.fecha)}</td>
                       <td className="px-3 py-3">
                         <TipoBadge tipo={s.tipoSolicitante} />

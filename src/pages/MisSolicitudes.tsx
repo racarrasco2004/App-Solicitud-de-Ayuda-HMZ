@@ -61,7 +61,7 @@ export function MisSolicitudes() {
               <tbody>
                 {mias.map((s) => (
                   <tr key={s.id} className="border-b border-linea last:border-0 hover:bg-uc-blue-light/50">
-                    <td className="px-3 py-3 font-bold text-uc-purple-texto">{s.id}</td>
+                    <td className="px-3 py-3 font-mono font-bold text-uc-purple-texto">{s.id}</td>
                     <td className="px-3 py-3 whitespace-nowrap">{fechaCorta(s.fecha)}</td>
                     <td className="px-3 py-3">
                       <ProgramaBadge programa={s.programa} />
@@ -87,7 +87,7 @@ export function MisSolicitudes() {
               {mias.map((s) => (
                 <li key={s.id} className="space-y-1.5 p-4">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-bold text-uc-purple-texto">{s.id}</span>
+                    <span className="font-mono font-bold text-uc-purple-texto">{s.id}</span>
                     <EstadoBadge estado={s.estado} />
                   </div>
                   <div className="flex flex-wrap gap-1.5">

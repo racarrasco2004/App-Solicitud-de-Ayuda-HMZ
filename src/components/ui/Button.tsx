@@ -17,9 +17,9 @@ type TamanoBoton = 'sm' | 'md' | 'lg'
 
 const variantes: Record<VarianteBoton, string> = {
   // Acción principal (Continuar, Guardar, Enviar)
-  purple: 'bg-uc-purple text-white hover:brightness-90',
+  purple: 'gradiente-marca text-white shadow-[0_8px_22px_-8px_rgb(var(--uc-purple)/0.65)] hover:brightness-110',
   // Registrar, consultar, nuevo
-  blue: 'bg-uc-blue text-white hover:brightness-90',
+  blue: 'bg-uc-blue text-white shadow-[0_8px_22px_-8px_rgb(var(--uc-blue)/0.65)] hover:brightness-110',
   // Confirmar lo bueno (Aprobar, Activar)
   green: 'bg-uc-green text-white hover:brightness-90',
   // Lo que no se deshace (Eliminar, Cancelar solicitud)

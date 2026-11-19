@@ -6,7 +6,6 @@ import {
   HeartPulse,
   Info,
   Send,
-  Sparkles,
   UserRound,
   Users,
   UsersRound,
@@ -14,6 +13,7 @@ import {
 } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import espiritual from '@/assets/marca/area-espiritual.png'
 import { AvisoHorario } from '@/components/AvisoHorario'
 import { Button } from '@/components/ui/Button'
 import { CampoLista, CampoTexto, CampoTextoLargo } from '@/components/ui/Campos'
@@ -40,9 +40,9 @@ const tipos: { valor: TipoSolicitante; titulo: string; texto: string; icono: Luc
   { valor: 'Equipo', titulo: 'Para mi equipo', texto: 'Tu equipo de trabajo, para que lo acompañemos juntos.', icono: UsersRound },
 ]
 
-const opcionesApoyo: { clave: Apoyo; titulo: string; texto: string }[] = [
-  { clave: 'PAEC', titulo: 'Apoyo emocional - Psicólogo/a', texto: 'Conversar con un psicólogo/a y sentirte acompañado(a).' },
-  { clave: 'PARES', titulo: 'Evento difícil - PARES', texto: 'Tú o alguien de tu equipo vivió un evento muy estresante o de seguridad grave.' },
+const opcionesApoyo: { clave: Apoyo; titulo: string; texto: string; logo?: string }[] = [
+  { clave: 'PAEC', titulo: 'Apoyo emocional - Psicólogo/a', texto: 'Conversar con un psicólogo/a y sentirte acompañado(a).', logo: programas[0].logo },
+  { clave: 'PARES', titulo: 'Evento difícil - PARES', texto: 'Tú o alguien de tu equipo vivió un evento muy estresante o de seguridad grave.', logo: programas[1].logo },
   { clave: 'UIC', titulo: 'Crisis en tu unidad - UIC', texto: 'Quieres saber cómo pedir una intervención en crisis.' },
 ]
 
@@ -63,12 +63,14 @@ function Opcion({
   titulo,
   texto,
   icono: Icono,
+  logo,
 }: {
   activa: boolean
   onClick: () => void
   titulo: string
   texto?: string
   icono?: LucideIcon
+  logo?: string
 }) {
   return (
     <button
@@ -80,6 +82,11 @@ function Opcion({
         activa ? 'border-uc-purple bg-uc-purple-light' : 'border-linea bg-superficie',
       )}
     >
+      {logo && (
+        <span className="grid h-14 w-28 shrink-0 place-items-center rounded-xl bg-white p-1 ring-1 ring-linea">
+          <img src={logo} alt="" className="max-h-full max-w-full object-contain" />
+        </span>
+      )}
       {Icono && (
         <span className="grid size-10 shrink-0 place-items-center rounded-full bg-uc-purple text-white">
           <Icono size={20} aria-hidden />
@@ -217,7 +224,7 @@ export function NuevaSolicitud() {
           Si quieres agregar una nueva solicitud, no dudes en hacerla.
         </p>
         <p className="mt-5 text-xs font-bold tracking-wide text-tinta-3 uppercase">Tu código</p>
-        <p className="text-2xl font-extrabold text-uc-purple-texto">{creada.id}</p>
+        <p className="font-mono text-2xl font-extrabold tracking-tight text-uc-purple-texto">{creada.id}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link to="/">
             <Button relieve>Volver al inicio</Button>
@@ -326,7 +333,7 @@ export function NuevaSolicitud() {
             texto="Si no lo sabes, elige «Prefiero no decirlo»."
           >
             <div className="flex gap-3 rounded-2xl border border-uc-purple/20 bg-uc-purple-light p-4 text-sm text-uc-purple-texto">
-              <Sparkles size={20} className="mt-0.5 shrink-0" aria-hidden />
+              <img src={espiritual} alt="Área de Asistencia Espiritual y Pastoral" className="h-14 w-28 shrink-0 rounded-xl bg-white object-contain p-1" />
               <p>
                 <strong>¿Qué es el apoyo espiritual?</strong> Es un acompañamiento que respeta la fe, las creencias y los valores de cada persona,
                 desde cualquier religión o sin una en particular. Te escucha, te acompaña y, si lo deseas, comparte un momento de oración o de silencio.
@@ -345,7 +352,7 @@ export function NuevaSolicitud() {
         {paso === 'apoyo' && (
           <Pregunta titulo="¿Qué tipo de apoyo necesitas?" texto="Elige lo que más se parezca a tu situación.">
             {opcionesApoyo.map((o) => (
-              <Opcion key={o.clave} activa={apoyo === o.clave} titulo={o.titulo} texto={o.texto} onClick={() => setApoyo(o.clave)} />
+              <Opcion key={o.clave} activa={apoyo === o.clave} titulo={o.titulo} texto={o.texto} logo={o.logo} onClick={() => setApoyo(o.clave)} />
             ))}
             <Error texto={ver('apoyo')} />
             {apoyo && apoyo !== 'UIC' && (

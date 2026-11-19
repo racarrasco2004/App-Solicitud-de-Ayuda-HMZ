@@ -29,6 +29,8 @@ export function Login() {
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_1fr]">
       {/* Lado de marca */}
       <aside className="gradiente-marca relative flex min-h-56 flex-col justify-end overflow-hidden p-8 text-white lg:min-h-0 lg:p-14">
+        <span className="hero-tech absolute inset-0 opacity-90" aria-hidden />
+        <span className="rejilla absolute inset-0" aria-hidden />
         <img src={edificio} alt="" aria-hidden className="absolute inset-0 size-full object-cover opacity-25 mix-blend-luminosity" />
         <div className="relative max-w-md">
           <p className="fuente-cercana text-4xl leading-tight font-bold lg:text-5xl">Aquí estamos para acompañarte</p>
@@ -39,8 +41,8 @@ export function Login() {
       </aside>
 
       {/* Formulario */}
-      <main className="flex items-center justify-center bg-fondo p-6">
-        <div className="w-full max-w-sm">
+      <main className="fondo-puntos flex items-center justify-center bg-fondo p-6">
+        <div className="cristal w-full max-w-md rounded-3xl p-7">
           <div className="mb-6 flex justify-center"><LogosAreas alto="h-14" className="p-2 shadow-sm ring-1 ring-linea" /></div>
           {MICROSOFT_ACTIVO ? (
             <div className="space-y-4">

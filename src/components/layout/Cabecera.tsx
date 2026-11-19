@@ -38,11 +38,13 @@ export function Cabecera({ onAjustes }: { onAjustes: () => void }) {
   const enlace = ({ isActive }: { isActive: boolean }) =>
     cn(
       'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold whitespace-nowrap transition-colors',
-      isActive ? 'bg-uc-purple text-white' : 'text-tinta-2 hover:bg-uc-purple-light',
+      isActive
+        ? 'gradiente-marca text-white shadow-[0_6px_16px_-6px_rgb(var(--uc-purple)/0.7)]'
+        : 'text-tinta-2 hover:bg-uc-purple-light',
     )
 
   return (
-    <header className="sticky top-0 z-30 border-b border-linea bg-superficie/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-linea/70 bg-superficie/75 backdrop-blur-xl backdrop-saturate-150">
       <div className="gradiente-marca h-1" aria-hidden />
       <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2">
         <Link to="/" aria-label="Ir al inicio" className="shrink-0">

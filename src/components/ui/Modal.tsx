@@ -5,7 +5,7 @@ import { cn } from '@/utils/cn'
 type TonoModal = 'purple' | 'blue' | 'red' | 'green' | 'amber'
 
 const encabezados: Record<TonoModal, string> = {
-  purple: 'bg-uc-purple',
+  purple: 'gradiente-marca',
   blue: 'bg-uc-blue',
   red: 'bg-uc-red',
   green: 'bg-uc-green',

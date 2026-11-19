@@ -372,3 +372,101 @@ dialog::backdrop {
   :root:not([data-movimiento='normal']) .barra-avance,
   :root:not([data-movimiento='normal']) .anillo-progreso { display: none; }
 }
+
+/* =====================================================================
+   4. ACABADO TECNOLÓGICO (rejilla, brillos y vidrio), sin perder lo institucional
+   ===================================================================== */
+html {
+  scrollbar-color: rgb(var(--uc-purple-mid) / 0.55) transparent;
+  scrollbar-width: thin;
+}
+::selection {
+  background: rgb(var(--uc-blue) / 0.28);
+}
+
+/* Rejilla fina que se desvanece hacia abajo, detrás del contenido */
+.fondo-puntos {
+  position: relative;
+  isolation: isolate;
+}
+.fondo-puntos::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgb(var(--uc-purple) / 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--uc-purple) / 0.055) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: linear-gradient(to bottom, #000, transparent 65%);
+  mask-image: linear-gradient(to bottom, #000, transparent 65%);
+}
+
+@layer components {
+  /* Texto con degradado morado a azul (usa los tonos de texto: se lee también en modo oscuro) */
+  .texto-gradiente {
+    background-image: linear-gradient(100deg, rgb(var(--uc-purple-texto)), rgb(var(--uc-blue-texto)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Portada: luz suave arriba a la derecha y brillo azul abajo a la izquierda */
+  .hero-tech {
+    background-image:
+      radial-gradient(38rem 18rem at 88% -25%, rgb(255 255 255 / 0.26), transparent 62%),
+      radial-gradient(30rem 16rem at 0% 115%, rgb(var(--uc-blue) / 0.6), transparent 62%),
+      linear-gradient(120deg, rgb(var(--uc-purple)), rgb(var(--uc-purple-mid)) 55%, rgb(var(--uc-blue)));
+  }
+
+  /* Rejilla blanca para las portadas de color */
+  .rejilla {
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.1) 1px, transparent 1px);
+    background-size: 36px 36px;
+    -webkit-mask-image: radial-gradient(75% 95% at 85% 15%, #000, transparent 78%);
+    mask-image: radial-gradient(75% 95% at 85% 15%, #000, transparent 78%);
+    pointer-events: none;
+  }
+
+  /* Destello que cruza la portada de vez en cuando */
+  .destello {
+    position: relative;
+    overflow: hidden;
+  }
+  .destello::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / 0.18) 50%, transparent 60%);
+    transform: translateX(-120%);
+    animation: barrido 9s ease-in-out 1.5s infinite;
+  }
+
+  /* Tarjeta de vidrio sobre fondos de color */
+  .cristal {
+    background: rgb(var(--superficie) / 0.72);
+    backdrop-filter: blur(14px) saturate(160%);
+    border: 1px solid rgb(255 255 255 / 0.5);
+    box-shadow: 0 24px 60px -28px rgb(var(--sombra) / 0.55);
+  }
+
+  .alza:hover {
+    box-shadow:
+      0 0 0 1px rgb(var(--uc-purple) / 0.28),
+      0 18px 40px -18px rgb(var(--uc-purple) / 0.5);
+  }
+}
+
+@keyframes barrido {
+  0%, 55% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+:root[data-movimiento='reducido'] .destello::after { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-movimiento='normal']) .destello::after { display: none; }
+}
