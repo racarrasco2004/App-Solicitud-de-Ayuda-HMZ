@@ -63,7 +63,7 @@ export function Programas() {
           </section>
 
           <div className="flex flex-col gap-5">
-            <section id="pares" className="flex flex-col overflow-hidden rounded-3xl border border-linea bg-superficie shadow-sm">
+            <section id="pares" className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-linea bg-superficie shadow-sm">
               <img src={fotosProgramas.pares} alt="" aria-hidden className="h-44 w-full object-cover" />
               <div className="flex flex-1 flex-col p-5">
                 <img src={pares.logo} alt={`Programa ${pares.sigla}`} className="mb-3 h-20 w-auto self-start rounded-xl bg-white p-1" />
