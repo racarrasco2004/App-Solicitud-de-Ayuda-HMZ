@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { RutaProtegida } from '@/components/RutaProtegida'
 import { AnunciosProvider } from '@/context/AnunciosContext'
@@ -16,7 +16,6 @@ import { Login } from '@/pages/Login'
 import { MisSolicitudes } from '@/pages/MisSolicitudes'
 import { NoEncontrada } from '@/pages/NoEncontrada'
 import { NuevaSolicitud } from '@/pages/NuevaSolicitud'
-import { Programas } from '@/pages/Programas'
 
 export default function App() {
   return (
@@ -31,7 +30,7 @@ export default function App() {
               <Route element={<RutaProtegida />}>
                 <Route element={<AppLayout />}>
                   <Route index element={<Inicio />} />
-                  <Route path="programas" element={<Programas />} />
+                  <Route path="programas" element={<Navigate to="/#programas" replace />} />
                   <Route path="nueva-solicitud" element={<NuevaSolicitud />} />
                   <Route path="mis-solicitudes" element={<MisSolicitudes />} />
                   <Route path="solicitudes" element={<Solicitudes />} />

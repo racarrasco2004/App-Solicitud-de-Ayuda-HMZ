@@ -76,7 +76,7 @@ export interface Centro {
   subcentros: Subcentro[]
 }
 
-/** Tarjeta de anuncio o campaña que se ve en el Inicio y en Programas */
+/** Tarjeta de anuncio o campaña que se ve en el Inicio */
 export interface Anuncio {
   id: string
   titulo: string

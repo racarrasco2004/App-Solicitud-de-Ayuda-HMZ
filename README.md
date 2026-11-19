@@ -45,7 +45,7 @@ src/
   config/            navegación y roles, programas, enlaces, escalamiento
   context/           Auth (sesión), Solicitudes, Catalogos (responsables y usuarios), Ajustes (lectura)
   data/              catálogos de centros y servicios, datos de ejemplo
-  pages/             Inicio, Programas, NuevaSolicitud, MisSolicitudes, Solicitudes, Detalle, Estadísticas, Administración, Login
+  pages/             Inicio, NuevaSolicitud, Anuncios, MisSolicitudes, Solicitudes, Detalle, Estadísticas, Administración, Login
   services/          Acceso a datos (ver abajo)
   types/             Tipos de TypeScript
 docs/                Diseño de la conexión con SharePoint
@@ -77,5 +77,5 @@ React 19 · TypeScript · Vite · Tailwind CSS 4 · React Router · Recharts · 
 - **Línea de tiempo de 4 pasos:** pides apoyo, le llega a un equipo, se asigna a tu contraparte, te contactamos.
 - **Humanización y Misión y RSE** se nombran y se muestran siempre juntas (`src/config/marca.ts`, `LogosAreas`).
 - **Escalamiento a 24 h** (`src/config/escalamiento.ts`) y aviso de horario hábil, lunes a viernes (`src/config/marca.ts`).
-- **Anuncios:** tarjetas deslizantes con foto y texto en Inicio y Programas. Coordinador y administrador las crean, editan, ocultan y ordenan en la pestaña *Anuncios* (las fotos se guardan en el navegador; en producción irán a una biblioteca de SharePoint).
-- **Programas:** los talleres grupales (Espacio Libre de Estrés) van dentro de PAEC. Las fotos de cada programa se cambian en `src/config/fotos.ts`.
+- **Anuncios:** tarjetas deslizantes con foto y texto en el Inicio. Coordinador y administrador las crean, editan, ocultan y ordenan en la pestaña *Anuncios* (las fotos se guardan en el navegador; en producción irán a una biblioteca de SharePoint).
+- **Programas:** ya no tienen pestaña propia. Están en el Inicio como filas desplegables (`ProgramasDesplegables`); los talleres grupales (Espacio Libre de Estrés) van dentro de PAEC. El enlace `/programas` redirige al Inicio.

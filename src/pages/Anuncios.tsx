@@ -58,7 +58,7 @@ export function Anuncios() {
     <>
       <PageHeader
         titulo="Anuncios"
-        subtitulo="Estas tarjetas se ven en el Inicio y en Programas. Crea una, cámbiale la foto o el texto, y listo."
+        subtitulo="Estas tarjetas se ven en el Inicio. Crea una, cámbiale la foto o el texto, y listo."
         acciones={
           <Button relieve icono={Plus} onClick={() => abrir('nuevo')}>
             Nuevo anuncio

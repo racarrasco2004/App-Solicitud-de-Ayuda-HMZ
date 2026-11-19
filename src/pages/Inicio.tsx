@@ -1,18 +1,16 @@
-import { ArrowRight, ClipboardPlus, HandHeart, Inbox, Pause, Phone, Play, UserCheck } from 'lucide-react'
+import { ClipboardPlus, HandHeart, Inbox, Pause, Phone, Play, UserCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import edificio from '@/assets/edificio-uc-christus.jpg'
 import { AvisoHorario } from '@/components/AvisoHorario'
 import { CarruselAnuncios } from '@/components/CarruselAnuncios'
-import espiritual from '@/assets/marca/area-espiritual.png'
+import { ProgramasDesplegables } from '@/components/ProgramasDesplegables'
 import { Button } from '@/components/ui/Button'
 import { descripcionDeRol } from '@/config/navegacion'
-import { programas } from '@/config/programas'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/utils/cn'
 import { primerNombre } from '@/utils/formato'
 
-const [paec, pares] = programas
 
 const pasos = [
   { icono: ClipboardPlus, titulo: 'Pides apoyo', texto: 'Respondes unas pocas preguntas en el portal. Es rápido.' },
@@ -92,7 +90,7 @@ export function Inicio() {
                 Pedir apoyo
               </Button>
             </Link>
-            <Link to="/programas">
+            <Link to="/#programas">
               <Button variante="ghost" tamano="lg" tabIndex={-1} className="!text-white ring-1 ring-white/60 hover:!bg-white/15">
                 Conocer los programas
               </Button>
@@ -103,27 +101,7 @@ export function Inicio() {
 
       <div className="animar-aparecer"><ComoAvanza /></div>
 
-      {/* Programas: una sola tarjeta con una fila por programa */}
-      <section aria-label="Nuestros programas" className="rounded-3xl border border-linea bg-superficie p-5 shadow-sm">
-        <h2 className="fuente-cercana mb-2 text-2xl font-bold text-uc-purple-texto">Nuestros programas</h2>
-        <ul className="divide-y divide-linea">
-          {[
-            { id: 'paec', logo: paec.logo, alt: paec.nombre, texto: 'Apoyo emocional con psicólogo/a para colaboradores. Incluye talleres grupales.' },
-            { id: 'pares', logo: pares.logo, alt: pares.nombre, texto: 'Colegas que te acompañan después de un evento difícil.' },
-            { id: 'espiritual', logo: espiritual, alt: 'Área de Asistencia Espiritual y Pastoral', texto: 'Acompañamiento espiritual para pacientes y familias.' },
-          ].map((p) => (
-            <li key={p.id}>
-              <Link to={`/programas#${p.id}`} className="group flex items-center gap-4 rounded-2xl px-2 py-3 transition-colors hover:bg-uc-purple-light">
-                <span className="flex h-14 w-32 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 ring-1 ring-linea">
-                  <img src={p.logo} alt={p.alt} className="h-full w-auto max-w-full object-contain" />
-                </span>
-                <span className="flex-1 text-sm text-tinta-2">{p.texto}</span>
-                <ArrowRight size={18} className="shrink-0 text-uc-purple-texto transition-transform group-hover:translate-x-1" aria-hidden />
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <ProgramasDesplegables />
 
       <CarruselAnuncios />
     </div>
