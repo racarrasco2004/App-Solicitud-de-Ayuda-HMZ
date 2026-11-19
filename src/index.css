@@ -1,0 +1,374 @@
+@import 'tailwindcss';
+
+/* El modo oscuro se activa con la clase "dark" en <html> (ver AjustesContext). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =====================================================================
+   1. TOKENS DE DISEÑO (copiados de la maqueta del Pool de Enfermería)
+   Cada color es un ROL ("fondo", "superficie", "tinta"...) escrito como
+   tres números R G B. El modo oscuro solo redefine estos roles.
+   NUNCA escribas grises o colores sueltos en los componentes: usa los roles.
+   ===================================================================== */
+:root {
+  color-scheme: light;
+
+  /* Neutros */
+  --fondo: 247 245 251;
+  --superficie: 255 255 255;
+  --superficie-2: 250 250 250;
+  --superficie-3: 240 240 240;
+  --linea: 226 226 226;
+  --linea-suave: 240 240 240;
+  --linea-fuerte: 187 187 187;
+  --tinta: 45 45 45;
+  --tinta-2: 85 85 85;
+  --tinta-3: 102 102 102;
+  --apagado: 136 136 136;
+  --tenue: 187 187 187;
+
+  /* Morado UC (marca) */
+  --uc-purple: 99 37 117;
+  --uc-purple-light: 245 237 249;
+  --uc-purple-mid: 139 58 158;
+  --uc-purple-texto: 99 37 117;
+  --uc-purple-borde: 217 188 232;
+  --uc-purple-elegido: 241 226 245;
+
+  /* Azul */
+  --uc-blue: 37 117 215;
+  --uc-blue-light: 234 243 251;
+  --uc-blue-texto: 37 117 215;
+  --uc-blue-borde: 190 229 235;
+  --uc-blue-suave: 240 247 255;
+  --uc-blue-elegido: 231 244 254;
+
+  /* Verde */
+  --uc-green: 26 122 74;
+  --uc-green-light: 232 245 238;
+  --uc-green-texto: 26 122 74;
+  --uc-green-borde: 168 213 190;
+  --uc-green-elegido: 220 252 236;
+
+  /* Rojo */
+  --uc-red: 192 57 43;
+  --uc-red-light: 253 236 234;
+  --uc-red-texto: 192 57 43;
+  --uc-red-borde: 245 198 203;
+  --uc-red-elegido: 254 231 228;
+
+  /* Ámbar */
+  --uc-amber: 251 174 64;
+  --uc-amber-light: 255 248 231;
+  --uc-amber-texto: 122 86 0;
+  --uc-amber-borde: 224 192 112;
+  --uc-amber-fuerte: 160 96 0;
+
+  /* Turquesa */
+  --turquesa: 15 118 110;
+  --turquesa-suave: 240 253 250;
+  --turquesa-texto: 17 94 89;
+  --turquesa-borde: 153 214 204;
+
+  /* Aviso */
+  --aviso: 186 84 78;
+  --aviso-suave: 254 243 241;
+  --aviso-texto: 150 52 46;
+  --aviso-borde: 236 190 186;
+
+  /* Barra superior y encabezados de tabla */
+  --barra-medio: 122 46 140;
+  --encabezado-bajo: 88 32 105;
+  --sombra: 40 20 50;
+}
+
+:root.dark {
+  color-scheme: dark;
+
+  --fondo: 18 18 22;
+  --superficie: 28 28 34;
+  --superficie-2: 35 35 42;
+  --superficie-3: 43 43 51;
+  --linea: 51 51 60;
+  --linea-suave: 40 40 47;
+  --linea-fuerte: 82 82 92;
+  --tinta: 236 236 241;
+  --tinta-2: 205 205 213;
+  --tinta-3: 174 174 184;
+  --apagado: 142 142 154;
+  --tenue: 98 98 109;
+
+  --uc-purple: 122 53 145;
+  --uc-purple-light: 42 30 49;
+  --uc-purple-mid: 155 85 180;
+  --uc-purple-texto: 208 166 227;
+  --uc-purple-borde: 78 47 94;
+  --uc-purple-elegido: 56 38 66;
+
+  --uc-blue: 26 120 194;
+  --uc-blue-light: 21 36 51;
+  --uc-blue-texto: 125 187 234;
+  --uc-blue-borde: 31 74 99;
+  --uc-blue-suave: 23 32 43;
+  --uc-blue-elegido: 24 44 64;
+
+  --uc-green: 26 122 74;
+  --uc-green-light: 20 38 29;
+  --uc-green-texto: 111 209 155;
+  --uc-green-borde: 47 94 69;
+  --uc-green-elegido: 24 52 38;
+
+  --uc-red: 192 57 43;
+  --uc-red-light: 46 23 21;
+  --uc-red-texto: 240 138 128;
+  --uc-red-borde: 107 46 40;
+  --uc-red-elegido: 62 30 27;
+
+  --uc-amber: 224 154 46;
+  --uc-amber-light: 46 38 20;
+  --uc-amber-texto: 242 196 107;
+  --uc-amber-borde: 107 83 32;
+  --uc-amber-fuerte: 160 96 0;
+
+  --turquesa: 15 118 110;
+  --turquesa-suave: 19 40 38;
+  --turquesa-texto: 94 234 212;
+  --turquesa-borde: 30 90 84;
+
+  --aviso: 186 84 78;
+  --aviso-suave: 42 26 25;
+  --aviso-texto: 244 168 160;
+  --aviso-borde: 104 52 48;
+
+  --barra-medio: 96 42 116;
+  --encabezado-bajo: 96 40 114;
+  --sombra: 0 0 0;
+}
+
+/* Conecta los roles con Tailwind: ahora existen clases como
+   bg-superficie, text-tinta-2, border-linea, bg-uc-purple, text-uc-purple-texto... */
+@theme inline {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --color-fondo: rgb(var(--fondo));
+  --color-superficie: rgb(var(--superficie));
+  --color-superficie-2: rgb(var(--superficie-2));
+  --color-superficie-3: rgb(var(--superficie-3));
+  --color-linea: rgb(var(--linea));
+  --color-linea-suave: rgb(var(--linea-suave));
+  --color-linea-fuerte: rgb(var(--linea-fuerte));
+  --color-tinta: rgb(var(--tinta));
+  --color-tinta-2: rgb(var(--tinta-2));
+  --color-tinta-3: rgb(var(--tinta-3));
+  --color-apagado: rgb(var(--apagado));
+  --color-tenue: rgb(var(--tenue));
+
+  --color-uc-purple: rgb(var(--uc-purple));
+  --color-uc-purple-light: rgb(var(--uc-purple-light));
+  --color-uc-purple-mid: rgb(var(--uc-purple-mid));
+  --color-uc-purple-texto: rgb(var(--uc-purple-texto));
+  --color-uc-purple-borde: rgb(var(--uc-purple-borde));
+  --color-uc-purple-elegido: rgb(var(--uc-purple-elegido));
+
+  --color-uc-blue: rgb(var(--uc-blue));
+  --color-uc-blue-light: rgb(var(--uc-blue-light));
+  --color-uc-blue-texto: rgb(var(--uc-blue-texto));
+  --color-uc-blue-borde: rgb(var(--uc-blue-borde));
+  --color-uc-blue-suave: rgb(var(--uc-blue-suave));
+  --color-uc-blue-elegido: rgb(var(--uc-blue-elegido));
+
+  --color-uc-green: rgb(var(--uc-green));
+  --color-uc-green-light: rgb(var(--uc-green-light));
+  --color-uc-green-texto: rgb(var(--uc-green-texto));
+  --color-uc-green-borde: rgb(var(--uc-green-borde));
+  --color-uc-green-elegido: rgb(var(--uc-green-elegido));
+
+  --color-uc-red: rgb(var(--uc-red));
+  --color-uc-red-light: rgb(var(--uc-red-light));
+  --color-uc-red-texto: rgb(var(--uc-red-texto));
+  --color-uc-red-borde: rgb(var(--uc-red-borde));
+  --color-uc-red-elegido: rgb(var(--uc-red-elegido));
+
+  --color-uc-amber: rgb(var(--uc-amber));
+  --color-uc-amber-light: rgb(var(--uc-amber-light));
+  --color-uc-amber-texto: rgb(var(--uc-amber-texto));
+  --color-uc-amber-borde: rgb(var(--uc-amber-borde));
+  --color-uc-amber-fuerte: rgb(var(--uc-amber-fuerte));
+
+  --color-turquesa: rgb(var(--turquesa));
+  --color-turquesa-suave: rgb(var(--turquesa-suave));
+  --color-turquesa-texto: rgb(var(--turquesa-texto));
+  --color-turquesa-borde: rgb(var(--turquesa-borde));
+
+  --color-aviso: rgb(var(--aviso));
+  --color-aviso-suave: rgb(var(--aviso-suave));
+  --color-aviso-texto: rgb(var(--aviso-texto));
+  --color-aviso-borde: rgb(var(--aviso-borde));
+}
+
+/* =====================================================================
+   2. BASE
+   ===================================================================== */
+html {
+  /* El tamaño de letra se cambia desde "Ajustes de lectura" (AjustesContext). */
+  font-size: 100%;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--fondo));
+  color: rgb(var(--tinta));
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Anillo de foco visible para quien navega con teclado */
+:focus-visible {
+  outline: 2px solid rgb(var(--uc-blue));
+  outline-offset: 2px;
+}
+
+/* Fondo del contenido: tintes suaves de morado y azul en las esquinas */
+.fondo-puntos {
+  background-image:
+    radial-gradient(60rem 28rem at 0% -10%, rgb(var(--uc-purple) / 0.1), transparent 70%),
+    radial-gradient(50rem 26rem at 100% -5%, rgb(var(--uc-blue) / 0.09), transparent 70%);
+  background-repeat: no-repeat;
+}
+
+/* =====================================================================
+   3. EFECTOS REUTILIZABLES
+   ===================================================================== */
+@layer components {
+  /* Botón con sombra suave que se hunde un poco al presionar */
+  .relieve {
+    box-shadow: 0 6px 14px -6px rgb(var(--sombra) / 0.45);
+  }
+  .relieve:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: 0 2px 6px -3px rgb(var(--sombra) / 0.45);
+  }
+
+  /* Encabezado lavanda de las tablas */
+  .encabezado-tabla {
+    background: rgb(var(--uc-purple-light));
+    border-bottom: 2px solid rgb(var(--uc-purple-borde));
+  }
+
+  /* Letra manuscrita de los logos de Humanización, solo para saludos y títulos grandes */
+  .fuente-cercana {
+    font-family: 'Kalam', 'Segoe Print', cursive;
+  }
+
+  /* Degradado de marca: morado institucional a azul de Humanización */
+  .gradiente-marca {
+    background-image: linear-gradient(120deg, rgb(var(--uc-purple)), rgb(var(--uc-purple-mid)) 55%, rgb(var(--uc-blue)));
+  }
+
+  /* Barra superior */
+  .barra-superior {
+    background-image: linear-gradient(90deg, rgb(var(--uc-purple)), rgb(var(--barra-medio)));
+  }
+
+  /* Tarjeta que se levanta al pasar el cursor */
+  .alza {
+    transition:
+      transform 0.15s ease,
+      box-shadow 0.15s ease,
+      border-color 0.15s ease;
+  }
+  .alza:hover {
+    transform: translateY(-2px);
+    border-color: rgb(var(--uc-purple-borde));
+    box-shadow: 0 10px 24px -12px rgb(var(--sombra) / 0.35);
+  }
+}
+
+/* Fondo de las ventanas (<dialog>) */
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.5);
+  backdrop-filter: blur(2px);
+}
+
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animar-aparecer {
+  animation: aparecer 0.3s ease-out both;
+}
+
+/* Reducir movimientos: lo pide el equipo o "Ajustes de lectura" */
+:root[data-movimiento='reducido'] *,
+:root[data-movimiento='reducido'] *::before,
+:root[data-movimiento='reducido'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-movimiento='normal']) *,
+  :root:not([data-movimiento='normal']) *::before,
+  :root:not([data-movimiento='normal']) *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ---------- Animaciones ---------- */
+@keyframes subir {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes pop {
+  0% { transform: scale(0.4); opacity: 0; }
+  60% { transform: scale(1.12); opacity: 1; }
+  100% { transform: scale(1); }
+}
+@keyframes onda {
+  0% { transform: scale(1); opacity: 0.45; }
+  100% { transform: scale(2); opacity: 0; }
+}
+@keyframes flotar {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -16px, 0); }
+}
+@keyframes llenar {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes anillo {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: 0; }
+}
+
+.animar-pop { animation: pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animar-onda { animation: onda 1.6s ease-out 0.3s 2 both; }
+.flotar { animation: flotar 8s ease-in-out infinite; }
+.barra-avance { transform-origin: left; animation: llenar var(--dur, 3s) linear forwards; }
+.anillo-progreso { stroke-dasharray: 100; animation: anillo var(--dur, 5s) linear forwards; }
+
+/* Los hijos aparecen uno tras otro, sin pisar el efecto de «alza» al pasar el mouse */
+.escalonar > * { animation: subir 0.5s ease-out backwards; }
+.escalonar > *:nth-child(2) { animation-delay: 0.07s; }
+.escalonar > *:nth-child(3) { animation-delay: 0.14s; }
+.escalonar > *:nth-child(4) { animation-delay: 0.21s; }
+.escalonar > *:nth-child(5) { animation-delay: 0.28s; }
+.escalonar > *:nth-child(6) { animation-delay: 0.35s; }
+.escalonar > *:nth-child(n + 7) { animation-delay: 0.42s; }
+
+:root[data-movimiento='reducido'] .barra-avance,
+:root[data-movimiento='reducido'] .anillo-progreso { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-movimiento='normal']) .barra-avance,
+  :root:not([data-movimiento='normal']) .anillo-progreso { display: none; }
+}
