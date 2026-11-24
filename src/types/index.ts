@@ -18,6 +18,12 @@ export interface Usuario {
   rol: Rol
 }
 
+export interface Responsable {
+  nombre: string
+  correo: string
+  activo: boolean
+}
+
 export interface Solicitud {
   /** Código visible, por ejemplo SOL-2026-0001 */
   id: string
@@ -37,6 +43,8 @@ export interface Solicitud {
   telefono: string
   /** Nombre del paciente o familiar a quien se acompañará. Solo cuando el apoyo es para ellos */
   personaApoyo?: string
+  /** Tipo de apoyo espiritual solicitado (ej. Oración o bendición, Escucha espiritual) */
+  apoyoEspiritual?: string
   /** Religión o creencia. Obligatoria si el apoyo es para un paciente o familiar */
   religion?: string
   comentario: string
@@ -57,6 +65,7 @@ export type DatosNuevaSolicitud = Pick<
   | 'solicitante'
   | 'telefono'
   | 'personaApoyo'
+  | 'apoyoEspiritual'
   | 'religion'
   | 'comentario'
 >

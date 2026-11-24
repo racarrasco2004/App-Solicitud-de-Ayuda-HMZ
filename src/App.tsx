@@ -4,6 +4,7 @@ import { RutaProtegida } from '@/components/RutaProtegida'
 import { AnunciosProvider } from '@/context/AnunciosContext'
 import { AjustesProvider } from '@/context/AjustesContext'
 import { CatalogosProvider } from '@/context/CatalogosContext'
+import { ConfiguracionPortalProvider } from '@/context/ConfiguracionPortalContext'
 import { AuthProvider } from '@/context/AuthContext'
 import { SolicitudesProvider } from '@/context/SolicitudesContext'
 import { Anuncios } from '@/pages/Anuncios'
@@ -20,33 +21,35 @@ import { NuevaSolicitud } from '@/pages/NuevaSolicitud'
 export default function App() {
   return (
     <AjustesProvider>
-      <CatalogosProvider>
-      <AuthProvider>
-        <SolicitudesProvider>
-          <AnunciosProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route element={<RutaProtegida />}>
-                <Route element={<AppLayout />}>
-                  <Route index element={<Inicio />} />
-                  <Route path="programas" element={<Navigate to="/#programas" replace />} />
-                  <Route path="nueva-solicitud" element={<NuevaSolicitud />} />
-                  <Route path="mis-solicitudes" element={<MisSolicitudes />} />
-                  <Route path="solicitudes" element={<Solicitudes />} />
-                  <Route path="solicitudes/:id" element={<DetalleSolicitud />} />
-                  <Route path="estadisticas" element={<Estadisticas />} />
-                  <Route path="anuncios" element={<Anuncios />} />
-                  <Route path="administracion" element={<Administracion />} />
-                  <Route path="*" element={<NoEncontrada />} />
-                </Route>
-              </Route>
-            </Routes>
-          </BrowserRouter>
-          </AnunciosProvider>
-        </SolicitudesProvider>
-      </AuthProvider>
-      </CatalogosProvider>
+      <ConfiguracionPortalProvider>
+        <CatalogosProvider>
+          <AuthProvider>
+            <SolicitudesProvider>
+              <AnunciosProvider>
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/login" element={<Login />} />
+                    <Route element={<RutaProtegida />}>
+                      <Route element={<AppLayout />}>
+                        <Route index element={<Inicio />} />
+                        <Route path="programas" element={<Navigate to="/#programas" replace />} />
+                        <Route path="nueva-solicitud" element={<NuevaSolicitud />} />
+                        <Route path="mis-solicitudes" element={<MisSolicitudes />} />
+                        <Route path="solicitudes" element={<Solicitudes />} />
+                        <Route path="solicitudes/:id" element={<DetalleSolicitud />} />
+                        <Route path="estadisticas" element={<Estadisticas />} />
+                        <Route path="anuncios" element={<Anuncios />} />
+                        <Route path="administracion" element={<Administracion />} />
+                        <Route path="*" element={<NoEncontrada />} />
+                      </Route>
+                    </Route>
+                  </Routes>
+                </BrowserRouter>
+              </AnunciosProvider>
+            </SolicitudesProvider>
+          </AuthProvider>
+        </CatalogosProvider>
+      </ConfiguracionPortalProvider>
     </AjustesProvider>
   )
 }

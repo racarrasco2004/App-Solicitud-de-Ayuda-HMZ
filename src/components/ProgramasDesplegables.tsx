@@ -1,13 +1,10 @@
 import { Check, ChevronDown, ExternalLink, HandHeart, Sparkles } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import espiritual from '@/assets/marca/area-espiritual.png'
 import { Button } from '@/components/ui/Button'
-import { FORMULARIO_PAEC_URL } from '@/config/enlaces'
-import { programas, talleresGrupales } from '@/config/programas'
+import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
 import { cn } from '@/utils/cn'
-
-const [paec, pares] = programas
 
 function Lista({ puntos }: { puntos: string[] }) {
   return (
@@ -32,77 +29,90 @@ interface Item {
   detalle: ReactNode
 }
 
-const items: Item[] = [
-  {
-    id: 'paec',
-    logo: paec.logo,
-    alt: paec.nombre,
-    resumen: 'Apoyo emocional con psicólogo/a para colaboradores. Incluye talleres grupales.',
-    detalle: (
-      <>
-        <p className="text-sm font-semibold text-tinta">{paec.descripcion}</p>
-        <Lista puntos={paec.puntos} />
-        <div className="rounded-2xl bg-uc-purple-light p-4">
-          <p className="flex items-center gap-2 text-sm font-extrabold text-uc-purple-texto">
-            <Sparkles size={16} aria-hidden /> Espacio Libre de Estrés
-          </p>
-          <p className="mt-1 mb-2.5 text-sm text-tinta-2">Talleres grupales de salud mental, prevención y promoción.</p>
-          <div className="flex flex-wrap gap-1.5">
-            {talleresGrupales.map((t) => (
-              <span key={t} className="rounded-full bg-superficie px-3 py-1 text-xs font-semibold text-uc-purple-texto">{t}</span>
-            ))}
-          </div>
-        </div>
-        <a href={FORMULARIO_PAEC_URL} target="_blank" rel="noreferrer" className="self-start">
-          <Button variante="blue" relieve icono={ExternalLink} tabIndex={-1}>Agendar mi atención</Button>
-        </a>
-      </>
-    ),
-  },
-  {
-    id: 'pares',
-    logo: pares.logo,
-    alt: pares.nombre,
-    resumen: 'Colegas que te acompañan después de un evento difícil.',
-    detalle: (
-      <>
-        <p className="text-sm font-semibold text-tinta">{pares.nombre}</p>
-        <Lista puntos={pares.puntos} />
-        <Link to="/nueva-solicitud" className="self-start">
-          <Button relieve icono={HandHeart} tabIndex={-1}>Pedir apoyo PARES</Button>
-        </Link>
-      </>
-    ),
-  },
-  {
-    id: 'espiritual',
-    logo: espiritual,
-    alt: 'Área de Asistencia Espiritual y Pastoral',
-    resumen: 'Acompañamiento espiritual para pacientes y familias.',
-    detalle: (
-      <>
-        <p className="text-sm text-tinta-2">
-          Si trabajas en la red, puedes pedir acompañamiento espiritual para un paciente o su familia, desde cualquier religión o creencia.
-          Lo entrega el Área de Asistencia Espiritual y Pastoral.
-        </p>
-        <Link to="/nueva-solicitud" className="self-start">
-          <Button relieve icono={HandHeart} tabIndex={-1}>Pedir acompañamiento</Button>
-        </Link>
-      </>
-    ),
-  },
-]
-
-/** Programas en filas: al hacer clic se despliega toda la información. Uno abierto a la vez. */
 export function ProgramasDesplegables() {
   const { hash } = useLocation()
+  const { config } = useConfiguracionPortal()
   const [abierto, setAbierto] = useState<string | null>(null)
 
-  // Un enlace como /#pares abre ese programa
+  const items: Item[] = useMemo(() => {
+    const paec = config.programas.find((p) => p.sigla === 'PAEC') ?? config.programas[0]
+    const pares = config.programas.find((p) => p.sigla === 'PARES') ?? config.programas[1]
+
+    return [
+      {
+        id: 'paec',
+        logo: paec.logo,
+        alt: paec.nombre,
+        resumen: 'Apoyo emocional con psicólogo/a para colaboradores. Incluye talleres grupales.',
+        detalle: (
+          <>
+            <p className="text-sm font-semibold text-tinta">{paec.descripcion}</p>
+            <Lista puntos={paec.puntos} />
+            <div className="rounded-2xl bg-uc-purple-light p-4">
+              <p className="flex items-center gap-2 text-sm font-extrabold text-uc-purple-texto">
+                <Sparkles size={16} aria-hidden /> Espacio Libre de Estrés
+              </p>
+              <p className="mt-1 mb-2.5 text-sm text-tinta-2">Talleres grupales de salud mental, prevención y promoción.</p>
+              <div className="flex flex-wrap gap-1.5">
+                {config.talleresGrupales.map((t) => (
+                  <span key={t} className="rounded-full bg-superficie px-3 py-1 text-xs font-semibold text-uc-purple-texto">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <a href={config.formularioPaecUrl} target="_blank" rel="noreferrer" className="self-start">
+              <Button variante="blue" relieve icono={ExternalLink} tabIndex={-1}>
+                Agendar mi atención
+              </Button>
+            </a>
+          </>
+        ),
+      },
+      {
+        id: 'pares',
+        logo: pares.logo,
+        alt: pares.nombre,
+        resumen: 'Colegas que te acompañan después de un evento difícil.',
+        detalle: (
+          <>
+            <p className="text-sm font-semibold text-tinta">{pares.nombre}</p>
+            <Lista puntos={pares.puntos} />
+            <Link to="/nueva-solicitud" className="self-start">
+              <Button relieve icono={HandHeart} tabIndex={-1}>
+                Pedir apoyo PARES
+              </Button>
+            </Link>
+          </>
+        ),
+      },
+      {
+        id: 'espiritual',
+        logo: espiritual,
+        alt: 'Área de Asistencia Espiritual y Pastoral',
+        resumen: 'Acompañamiento espiritual para pacientes, familias y colaboradores.',
+        detalle: (
+          <>
+            <p className="text-sm text-tinta-2">
+              Puedes pedir acompañamiento espiritual para un paciente, su familia, para ti o para tu equipo, desde cualquier religión o creencia.
+              Lo entrega el Área de Asistencia Espiritual y Pastoral.
+            </p>
+            <Lista puntos={config.tiposApoyoEspiritual} />
+            <Link to="/nueva-solicitud" className="self-start">
+              <Button relieve icono={HandHeart} tabIndex={-1}>
+                Pedir acompañamiento
+              </Button>
+            </Link>
+          </>
+        ),
+      },
+    ]
+  }, [config])
+
   useEffect(() => {
     const id = hash.slice(1)
     if (items.some((i) => i.id === id)) setAbierto(id)
-  }, [hash])
+  }, [hash, items])
 
   return (
     <section id="programas" aria-label="Nuestros programas" className="scroll-mt-24 rounded-3xl border border-linea bg-superficie p-5 shadow-sm">
@@ -129,7 +139,6 @@ export function ProgramasDesplegables() {
                 <span className="hidden text-xs font-bold text-uc-purple-texto sm:inline">{activo ? 'Cerrar' : 'Ver más'}</span>
                 <ChevronDown size={20} className={cn('shrink-0 text-uc-purple-texto transition-transform duration-300', activo && 'rotate-180')} aria-hidden />
               </button>
-              {/* Se abre con una transición suave de altura */}
               <div
                 id={`detalle-${p.id}`}
                 className={cn('grid transition-[grid-template-rows] duration-300 ease-out', activo ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}

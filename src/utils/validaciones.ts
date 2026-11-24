@@ -15,3 +15,20 @@ export function validarTelefono(valor: string): string {
   if (digitos.length < 8 || digitos.length > 12) return 'El teléfono debe tener entre 8 y 12 dígitos.'
   return ''
 }
+
+/** Si la persona escribe solo el usuario sin @, completa @ucchristus.cl automáticamente. */
+export function normalizarCorreoInstitucional(valor: string): string {
+  const limpio = valor.trim().toLowerCase()
+  if (!limpio) return ''
+  if (!limpio.includes('@')) return `${limpio}@ucchristus.cl`
+  return limpio
+}
+
+export function validarCorreoInstitucional(valor: string): string {
+  const correo = normalizarCorreoInstitucional(valor)
+  if (!correo) return 'Escribe el correo institucional.'
+  if (!/^[a-z0-9._-]+@(ucchristus\.cl|uc\.cl)$/.test(correo)) {
+    return 'Usa un correo institucional válido (@ucchristus.cl o @uc.cl).'
+  }
+  return ''
+}

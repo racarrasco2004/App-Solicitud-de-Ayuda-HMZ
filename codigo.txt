@@ -1,0 +1,912 @@
+﻿=== src\types\index.ts ===
+/**
+ * Tipos del dominio del Portal de Apoyo.
+ * Los nombres de los campos de `Solicitud` coinciden con las columnas que
+ * tendrÃ¡ la lista de SharePoint, para que el cambio de origen de datos sea simple.
+ */
+
+export type Rol = 'solicitante' | 'coordinador' | 'administrador'
+
+export type Programa = 'PAEC' | 'PARES'
+
+export type Estado = 'Pendiente' | 'En proceso' | 'Cerrada'
+
+export type TipoSolicitante = 'Paciente' | 'Familiar' | 'Colaborador' | 'Equipo'
+
+export interface Usuario {
+  correo: string
+  nombre: string
+  rol: Rol
+}
+
+export interface Solicitud {
+  /** CÃ³digo visible, por ejemplo SOL-2026-0001 */
+  id: string
+  /** Fecha y hora de creaciÃ³n en formato ISO */
+  fecha: string
+  /** Solo aplica a colaboradores y equipos. Pacientes y familiares: null */
+  programa: Programa | null
+  estado: Estado
+  /** Tipo de centro: "Hospitales y clÃ­nicas", "Centros mÃ©dicos"... */
+  centro: string
+  /** Centro especÃ­fico: "Hospital ClÃ­nico UC CHRISTUS", "Centro MÃ©dico Lira"... */
+  subcentro: string
+  servicio: string
+  tipoSolicitante: TipoSolicitante
+  /** Nombre de la persona de contacto */
+  solicitante: string
+  telefono: string
+  /** Nombre del paciente o familiar a quien se acompaÃ±arÃ¡. Solo cuando el apoyo es para ellos */
+  personaApoyo?: string
+  /** ReligiÃ³n o creencia. Obligatoria si el apoyo es para un paciente o familiar */
+  religion?: string
+  comentario: string
+  /** Persona del equipo de HumanizaciÃ³n a cargo. null = sin asignar */
+  responsable: string | null
+  /** Correo de quien registrÃ³ la solicitud */
+  creadaPor: string
+}
+
+/** Lo que completa quien crea una solicitud desde el formulario */
+export type DatosNuevaSolicitud = Pick<
+  Solicitud,
+  | 'programa'
+  | 'centro'
+  | 'subcentro'
+  | 'servicio'
+  | 'tipoSolicitante'
+  | 'solicitante'
+  | 'telefono'
+  | 'personaApoyo'
+  | 'religion'
+  | 'comentario'
+>
+
+/** Lo que puede cambiar un coordinador sobre una solicitud existente */
+export type CambiosSolicitud = Partial<Pick<Solicitud, 'estado' | 'responsable'>>
+
+export interface Subcentro {
+  nombre: string
+  servicios: string[]
+}
+
+export interface Centro {
+  nombre: string
+  /** Servicios que aplican a todos los subcentros de este tipo */
+  serviciosComunes: string[]
+  subcentros: Subcentro[]
+}
+
+/** Tarjeta de anuncio o campaÃ±a que se ve en el Inicio */
+export interface Anuncio {
+  id: string
+  titulo: string
+  texto: string
+  /** Foto: una imagen guardada (data:...) o Â«ejemplo:<clave>Â» para las fotos de muestra */
+  imagen: string
+  activo: boolean
+}
+=== src\data\catalogos.ts ===
+import type { Centro } from '@/types'
+
+/**
+ * CatÃ¡logos del portal (por ahora fijos; el mÃ³dulo de AdministraciÃ³n los editarÃ¡).
+ * Los servicios del Hospital ClÃ­nico son los reales. El resto son de ejemplo
+ * y deben reemplazarse por los oficiales.
+ */
+
+export const catalogoCentros: Centro[] = [
+  {
+    nombre: 'Hospitales y clÃ­nicas',
+    serviciosComunes: [],
+    subcentros: [
+      {
+        nombre: 'Hospital ClÃ­nico UC CHRISTUS',
+        servicios: [
+          'INTERMEDIO PEDIATRICO',
+          'PEDIATRIA',
+          'ONCO PEDIATRIA',
+          'UNIDAD CUIDADOS DE PEDIATRIA',
+          'ALMACEN QX 3Â° PISO',
+          'CENTRAL DE FARMACIA',
+          'CENTRAL DE INSUMOS CLINICOS',
+          'CENTRAL DE DIST DE INSUMOS',
+          'CENTRAL DE ESTERILIZACION',
+          'PABELLONES Y PROCEDIMIENTOS',
+          'SERVICIO RECUPERACION 3Â° PISO',
+          'UCI',
+          'Intermedio 4P Cuc',
+          'Intermedio OncolÃ³gico Piso 7',
+          'UNIDAD DE PROC NEFROLOGICOS',
+          'INTERMEDIO CORONARIO',
+          'SERVICIO RECUPERACION 6Â° PISO',
+          'UNIDAD CORONARIA',
+          'SERVICIO DE URGENCIA',
+          'LAB BANCO DE SANGRE',
+          'GESTION DE CAMAS',
+          'SERVICIOS GENERALES',
+          'MEDICO QUIRURGICO 4A',
+          'MEDICO QUIRURGICO 4B',
+          'MEDICO QUIRURGICO 4C',
+          'MEDICO QUIRURGICO 4DE',
+          'MEDICO QUIRURGICO 5A',
+          'MEDICO QUIRURGICO 5C',
+          'MÃ©dico QuirÃºrgico 6G',
+          'OncologÃ­a Adulto',
+          'SERVICIO CIRUGIA 2Â° PISO',
+          'PABELLON MATERNIDAD 1Â° PISO',
+          'SERVICIO DE MATERNIDAD',
+          'UNIDAD NEONATOLOGIA',
+          'Seguridad Hospital',
+        ],
+      },
+      { nombre: 'ClÃ­nica UC CHRISTUS', servicios: [] },
+      { nombre: 'ClÃ­nica San Carlos de Apoquindo', servicios: ['Hospitalizados', 'Urgencia'] },
+    ],
+  },
+  {
+    nombre: 'Centros mÃ©dicos',
+    serviciosComunes: ['Consulta', 'Toma de muestras'],
+    subcentros: [
+      'Centro MÃ©dico Marcoleta',
+      'Centro MÃ©dico Lira',
+      'Centro MÃ©dico Santa LucÃ­a',
+      'Centro MÃ©dico San JoaquÃ­n',
+      'Centro MÃ©dico AmÃ©rico Vespucio',
+      'Centro MÃ©dico AlcÃ¡ntara',
+      'Centro MÃ©dico Bilbao',
+      'Centro MÃ©dico IrarrÃ¡zaval',
+      'Centro MÃ©dico Vitacura',
+    ].map((nombre) => ({ nombre, servicios: [] })),
+  },
+  {
+    nombre: 'Centros de especialidad',
+    serviciosComunes: ['Consulta'],
+    subcentros: ['Centro de CÃ¡ncer UC CHRISTUS', 'Centro de Salud Mental Providencia'].map(
+      (nombre) => ({ nombre, servicios: [] }),
+    ),
+  },
+  {
+    nombre: 'Red Ãncora',
+    serviciosComunes: ['Consulta general', 'PediatrÃ­a'],
+    subcentros: [
+      'CESFAM Juan Pablo II',
+      'CESFAM Madre Teresa de Calcuta',
+      'CESFAM San Alberto Hurtado',
+      'Centro Ãncora San Francisco',
+    ].map((nombre) => ({ nombre, servicios: [] })),
+  },
+]
+
+/** OpciÃ³n que siempre se ofrece al final de la lista de servicios */
+export const OTRO_SERVICIO = 'Otro servicio / no lo sÃ©'
+
+export const religiones = [
+  'CatÃ³lica',
+  'EvangÃ©lica',
+  'JudÃ­a',
+  'Musulmana',
+  'Sin religiÃ³n',
+  'Otra',
+  'Prefiero no decirlo',
+]
+
+/** CatÃ¡logo oficial de responsables del equipo de HumanizaciÃ³n */
+export const responsables = [
+  'Francisco Castro Jorquera',
+  'Alexander Valenzuela Flores',
+  'Felipe MuÃ±oz Alvarez',
+  'Maria Paz Moreno Cortez',
+  'Catalina Mayorga Gajardo',
+]
+
+const ordenar = (a: string, b: string) => a.localeCompare(b, 'es', { sensitivity: 'base' })
+
+export function nombresDeCentros(): string[] {
+  return catalogoCentros.map((c) => c.nombre)
+}
+
+export function subcentrosDe(centro: string): string[] {
+  const encontrado = catalogoCentros.find((c) => c.nombre === centro)
+  return encontrado ? encontrado.subcentros.map((s) => s.nombre) : []
+}
+
+/** Servicios del subcentro + los comunes del tipo de centro, ordenados y sin repetir. */
+export function serviciosDe(centro: string, subcentro: string): string[] {
+  const tipo = catalogoCentros.find((c) => c.nombre === centro)
+  if (!tipo) return []
+  const propios = tipo.subcentros.find((s) => s.nombre === subcentro)?.servicios ?? []
+  return [...new Set([...tipo.serviciosComunes, ...propios])].sort(ordenar)
+}
+=== src\context\CatalogosContext.tsx ===
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { catalogoCentros, responsables as responsablesIniciales } from '@/data/catalogos'
+import { usuariosDemo } from '@/data/usuariosDemo'
+import type { Centro, Rol, Usuario } from '@/types'
+import { guardarJSON, leerJSON } from '@/utils/almacenamiento'
+
+/**
+ * CatÃ¡logos editables desde AdministraciÃ³n (responsables y usuarios).
+ * Hoy se guardan en el navegador; despuÃ©s se reemplazan por listas de SharePoint.
+ */
+export interface Responsable {
+  nombre: string
+  activo: boolean
+}
+
+const CLAVE_RESP = 'portal-apoyo:responsables:v1'
+const CLAVE_USU = 'portal-apoyo:usuarios:v1'
+const CLAVE_CENTROS = 'portal-apoyo:centros:v1'
+
+const ordenar = (a: string, b: string) => a.localeCompare(b, 'es')
+const existe = (lista: string[], nombre: string) => lista.some((x) => x.toLowerCase() === nombre.toLowerCase())
+
+interface CatalogosValor {
+  responsables: Responsable[]
+  /** Solo los activos, para elegir al asignar */
+  responsablesActivos: string[]
+  agregarResponsable: (nombre: string) => string
+  alternarResponsable: (nombre: string) => void
+  eliminarResponsable: (nombre: string) => void
+  usuarios: Usuario[]
+  agregarUsuario: (u: Usuario) => string
+  cambiarRol: (correo: string, rol: Rol) => void
+  quitarUsuario: (correo: string) => void
+  /** Centros y servicios (editables desde AdministraciÃ³n) */
+  centros: Centro[]
+  tiposDeCentro: () => string[]
+  subcentrosDe: (tipo: string) => string[]
+  /** Servicios del centro mÃ¡s los comunes del tipo, ordenados y sin repetir */
+  serviciosDe: (tipo: string, subcentro: string) => string[]
+  agregarSubcentro: (tipo: string, nombre: string) => string
+  /** subcentro = '' agrega un servicio comÃºn a todos los centros del tipo */
+  agregarServicio: (tipo: string, subcentro: string, nombre: string) => string
+  quitarServicio: (tipo: string, subcentro: string, nombre: string) => void
+}
+
+const CatalogosContext = createContext<CatalogosValor | null>(null)
+
+export function CatalogosProvider({ children }: { children: ReactNode }) {
+  const [responsables, setResponsables] = useState<Responsable[]>(
+    () => leerJSON<Responsable[]>(CLAVE_RESP) ?? responsablesIniciales.map((nombre) => ({ nombre, activo: true })),
+  )
+  const [usuarios, setUsuarios] = useState<Usuario[]>(() => leerJSON<Usuario[]>(CLAVE_USU) ?? usuariosDemo)
+
+  const [centros, setCentros] = useState<Centro[]>(
+    () => leerJSON<Centro[]>(CLAVE_CENTROS) ?? structuredClone(catalogoCentros),
+  )
+  const guardarCentros = (lista: Centro[]) => {
+    guardarJSON(CLAVE_CENTROS, lista)
+    setCentros(lista)
+  }
+
+  const guardarResp = (lista: Responsable[]) => {
+    guardarJSON(CLAVE_RESP, lista)
+    setResponsables(lista)
+  }
+  const guardarUsu = (lista: Usuario[]) => {
+    guardarJSON(CLAVE_USU, lista)
+    setUsuarios(lista)
+  }
+
+  const agregarResponsable = useCallback(
+    (nombre: string) => {
+      const limpio = nombre.trim()
+      if (limpio.length < 3) return 'Escribe el nombre completo.'
+      if (responsables.some((r) => r.nombre.toLowerCase() === limpio.toLowerCase())) return 'Esa persona ya estÃ¡ en la lista.'
+      guardarResp([...responsables, { nombre: limpio, activo: true }])
+      return ''
+    },
+    [responsables],
+  )
+
+  const alternarResponsable = useCallback(
+    (nombre: string) => guardarResp(responsables.map((r) => (r.nombre === nombre ? { ...r, activo: !r.activo } : r))),
+    [responsables],
+  )
+
+  const eliminarResponsable = useCallback(
+    (nombre: string) => guardarResp(responsables.filter((r) => r.nombre !== nombre)),
+    [responsables],
+  )
+
+  const agregarUsuario = useCallback(
+    (u: Usuario) => {
+      const correo = u.correo.trim().toLowerCase()
+      if (!/^[a-z0-9._-]+@ucchristus\.cl$/.test(correo)) return 'Usa un correo @ucchristus.cl.'
+      if (u.nombre.trim().length < 3) return 'Escribe el nombre.'
+      if (usuarios.some((x) => x.correo === correo)) return 'Ese correo ya tiene acceso.'
+      guardarUsu([...usuarios, { correo, nombre: u.nombre.trim(), rol: u.rol }])
+      return ''
+    },
+    [usuarios],
+  )
+
+  const cambiarRol = useCallback(
+    (correo: string, rol: Rol) => guardarUsu(usuarios.map((u) => (u.correo === correo ? { ...u, rol } : u))),
+    [usuarios],
+  )
+  const quitarUsuario = useCallback(
+    (correo: string) => guardarUsu(usuarios.filter((u) => u.correo !== correo)),
+    [usuarios],
+  )
+
+  const tiposDeCentro = useCallback(() => centros.map((c) => c.nombre), [centros])
+  const subcentrosDe = useCallback(
+    (tipo: string) => (centros.find((c) => c.nombre === tipo)?.subcentros.map((x) => x.nombre) ?? []),
+    [centros],
+  )
+  const serviciosDe = useCallback(
+    (tipo: string, subcentro: string) => {
+      const t = centros.find((c) => c.nombre === tipo)
+      if (!t) return []
+      const propios = t.subcentros.find((x) => x.nombre === subcentro)?.servicios ?? []
+      return [...new Set([...t.serviciosComunes, ...propios])].sort(ordenar)
+    },
+    [centros],
+  )
+
+  const agregarSubcentro = useCallback(
+    (tipo: string, nombre: string) => {
+      const limpio = nombre.trim()
+      if (limpio.length < 3) return 'Escribe el nombre del centro.'
+      if (existe(subcentrosDe(tipo), limpio)) return 'Ese centro ya existe en este tipo.'
+      guardarCentros(
+        centros.map((c) => (c.nombre === tipo ? { ...c, subcentros: [...c.subcentros, { nombre: limpio, servicios: [] }] } : c)),
+      )
+      return ''
+    },
+    [centros, subcentrosDe],
+  )
+
+  const agregarServicio = useCallback(
+    (tipo: string, subcentro: string, nombre: string) => {
+      const limpio = nombre.trim()
+      if (limpio.length < 2) return 'Escribe el nombre del servicio.'
+      const t = centros.find((c) => c.nombre === tipo)
+      if (!t) return 'Elige un tipo de centro.'
+      // Revisa repetidos contra comunes y propios del centro (o de todos, si es comÃºn)
+      const repetidos = subcentro
+        ? serviciosDe(tipo, subcentro)
+        : [...t.serviciosComunes, ...t.subcentros.flatMap((x) => x.servicios)]
+      if (existe(repetidos, limpio)) return 'Ese servicio ya existe.'
+      guardarCentros(
+        centros.map((c) =>
+          c.nombre !== tipo
+            ? c
+            : subcentro
+              ? { ...c, subcentros: c.subcentros.map((x) => (x.nombre === subcentro ? { ...x, servicios: [...x.servicios, limpio] } : x)) }
+              : { ...c, serviciosComunes: [...c.serviciosComunes, limpio] },
+        ),
+      )
+      return ''
+    },
+    [centros, serviciosDe],
+  )
+
+  const quitarServicio = useCallback(
+    (tipo: string, subcentro: string, nombre: string) =>
+      guardarCentros(
+        centros.map((c) =>
+          c.nombre !== tipo
+            ? c
+            : subcentro
+              ? { ...c, subcentros: c.subcentros.map((x) => (x.nombre === subcentro ? { ...x, servicios: x.servicios.filter((n) => n !== nombre) } : x)) }
+              : { ...c, serviciosComunes: c.serviciosComunes.filter((n) => n !== nombre) },
+        ),
+      ),
+    [centros],
+  )
+
+  const valor = useMemo(
+    () => ({
+      responsables,
+      responsablesActivos: responsables.filter((r) => r.activo).map((r) => r.nombre),
+      agregarResponsable,
+      alternarResponsable,
+      eliminarResponsable,
+      usuarios,
+      agregarUsuario,
+      cambiarRol,
+      quitarUsuario,
+      centros,
+      tiposDeCentro,
+      subcentrosDe,
+      serviciosDe,
+      agregarSubcentro,
+      agregarServicio,
+      quitarServicio,
+    }),
+    [responsables, usuarios, agregarResponsable, alternarResponsable, eliminarResponsable, agregarUsuario, cambiarRol, quitarUsuario, centros, tiposDeCentro, subcentrosDe, serviciosDe, agregarSubcentro, agregarServicio, quitarServicio],
+  )
+  return <CatalogosContext.Provider value={valor}>{children}</CatalogosContext.Provider>
+}
+
+export function useCatalogos(): CatalogosValor {
+  const c = useContext(CatalogosContext)
+  if (!c) throw new Error('useCatalogos debe usarse dentro de <CatalogosProvider>.')
+  return c
+}
+=== src\pages\Administracion.tsx ===
+import { Plus, Power, Trash2, TriangleAlert } from 'lucide-react'
+import { useState, type FormEvent, type ReactNode } from 'react'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { CampoLista, CampoTexto } from '@/components/ui/Campos'
+import { Modal } from '@/components/ui/Modal'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { HORAS_ESCALAMIENTO } from '@/config/escalamiento'
+import { nombreDeRol } from '@/config/navegacion'
+import { programas } from '@/config/programas'
+import { useAuth } from '@/context/AuthContext'
+import { useCatalogos } from '@/context/CatalogosContext'
+import { CentrosYServicios } from '@/pages/CentrosYServicios'
+import type { Rol } from '@/types'
+
+const roles: Rol[] = ['solicitante', 'coordinador', 'administrador']
+
+function Tarjeta({ titulo, nota, children, ancha }: { titulo: string; nota?: string; children: ReactNode; ancha?: boolean }) {
+  return (
+    <section className={`rounded-2xl border border-linea bg-superficie p-4 shadow-sm ${ancha ? 'md:col-span-2' : ''}`}>
+      <h2 className="text-sm font-bold text-tinta">{titulo}</h2>
+      {nota && <p className="text-xs text-tinta-3">{nota}</p>}
+      <div className="mt-3">{children}</div>
+    </section>
+  )
+}
+
+function Responsables() {
+  const { responsables, agregarResponsable, alternarResponsable, eliminarResponsable } = useCatalogos()
+  const [porEliminar, setPorEliminar] = useState<string | null>(null)
+  const [nombre, setNombre] = useState('')
+  const [error, setError] = useState('')
+  const enviar = (e: FormEvent) => {
+    e.preventDefault()
+    const msg = agregarResponsable(nombre)
+    setError(msg)
+    if (!msg) setNombre('')
+  }
+  return (
+    <Tarjeta titulo="Responsables" nota="Personas a quienes se asignan solicitudes. Desactivar no borra su historial.">
+      <ul className="mb-3 divide-y divide-linea text-sm">
+        {responsables.map((r) => (
+          <li key={r.nombre} className="flex items-center justify-between gap-2 py-2">
+            <span className={r.activo ? '' : 'text-tinta-3 line-through'}>{r.nombre}</span>
+            <span className="flex gap-1.5">
+              <Button tamano="sm" variante="outline" icono={Power} onClick={() => alternarResponsable(r.nombre)}>
+                {r.activo ? 'Desactivar' : 'Activar'}
+              </Button>
+              <Button tamano="sm" variante="red" icono={Trash2} onClick={() => setPorEliminar(r.nombre)} aria-label={`Eliminar a ${r.nombre}`}>
+                Eliminar
+              </Button>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <form onSubmit={enviar} className="flex items-start gap-2" noValidate>
+        <CampoTexto className="flex-1" etiqueta="Nuevo responsable" value={nombre} error={error} onChange={(e) => setNombre(e.target.value)} />
+        <Button type="submit" relieve icono={Plus} className="mt-[1.6rem]">Agregar</Button>
+      </form>
+      <Modal
+        abierto={porEliminar !== null}
+        onCerrar={() => setPorEliminar(null)}
+        titulo="Â¿Eliminar responsable?"
+        icono={TriangleAlert}
+        tono="red"
+        pie={
+          <>
+            <Button variante="outline" relieve onClick={() => setPorEliminar(null)}>Cancelar</Button>
+            <Button
+              variante="red"
+              relieve
+              icono={Trash2}
+              onClick={() => {
+                if (porEliminar) eliminarResponsable(porEliminar)
+                setPorEliminar(null)
+              }}
+            >
+              SÃ­, eliminar
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-tinta-2">
+          Vas a eliminar a <strong>{porEliminar}</strong> de la lista. Las solicitudes que ya tenÃ­a asignadas conservan su nombre.
+          Si solo quieres que no aparezca al asignar, usa Â«DesactivarÂ».
+        </p>
+      </Modal>
+    </Tarjeta>
+  )
+}
+
+function Usuarios() {
+  const { usuarios, agregarUsuario, cambiarRol, quitarUsuario } = useCatalogos()
+  const { usuario: yo } = useAuth()
+  const [correo, setCorreo] = useState('')
+  const [nombre, setNombre] = useState('')
+  const [rol, setRol] = useState<Rol>('coordinador')
+  const [error, setError] = useState('')
+  const enviar = (e: FormEvent) => {
+    e.preventDefault()
+    const msg = agregarUsuario({ correo, nombre, rol })
+    setError(msg)
+    if (!msg) {
+      setCorreo('')
+      setNombre('')
+    }
+  }
+  return (
+    <Tarjeta ancha titulo="Usuarios y roles" nota="QuiÃ©n puede entrar y quÃ© ve. Quien no estÃ¡ en la lista entra como solicitante.">
+      <div className="mb-3 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-[0.6875rem] font-bold tracking-wide text-tinta-3 uppercase">
+              <th className="py-1.5">Nombre</th><th>Correo</th><th>Rol</th><th />
+            </tr>
+          </thead>
+          <tbody>
+            {usuarios.map((u) => {
+              const esYo = u.correo === yo?.correo
+              return (
+                <tr key={u.correo} className="border-t border-linea">
+                  <td className="py-2 pr-2">{u.nombre} {esYo && <Badge tono="purple">TÃº</Badge>}</td>
+                  <td className="pr-2 text-tinta-2">{u.correo}</td>
+                  <td className="pr-2">
+                    <select
+                      aria-label={`Rol de ${u.nombre}`}
+                      value={u.rol}
+                      disabled={esYo}
+                      onChange={(e) => cambiarRol(u.correo, e.target.value as Rol)}
+                      className="rounded-md border border-linea-fuerte/60 bg-superficie px-2 py-1 text-sm disabled:opacity-50"
+                    >
+                      {roles.map((r) => <option key={r} value={r}>{nombreDeRol[r]}</option>)}
+                    </select>
+                  </td>
+                  <td className="text-right">
+                    <Button tamano="sm" variante="red" icono={Trash2} disabled={esYo} onClick={() => quitarUsuario(u.correo)} aria-label={`Quitar acceso a ${u.nombre}`}>
+                      Quitar
+                    </Button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+      <form onSubmit={enviar} className="grid items-start gap-2 sm:grid-cols-[1fr_1fr_160px_auto]" noValidate>
+        <CampoTexto etiqueta="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
+        <CampoTexto etiqueta="Correo" placeholder="nombre@ucchristus.cl" value={correo} error={error} onChange={(e) => setCorreo(e.target.value)} />
+        <CampoLista etiqueta="Rol" textoVacio="Rol" opciones={roles.map((r) => nombreDeRol[r])} value={nombreDeRol[rol]} onChange={(e) => setRol(roles.find((r) => nombreDeRol[r] === e.target.value) ?? 'solicitante')} />
+        <Button type="submit" relieve icono={Plus} className="sm:mt-[1.6rem]">Agregar</Button>
+      </form>
+    </Tarjeta>
+  )
+}
+
+export function Administracion() {
+  return (
+    <>
+      <PageHeader titulo="AdministraciÃ³n" subtitulo="Responsables, usuarios y reglas del portal." />
+      <div className="grid gap-4 md:grid-cols-2">
+        <Responsables />
+        <Tarjeta titulo="Programas">
+          <ul className="space-y-2 text-sm">
+            {programas.map((p) => (
+              <li key={p.sigla}><Badge tono="purple">{p.sigla}</Badge> <span className="ml-1">{p.nombre}</span></li>
+            ))}
+          </ul>
+          <h3 className="mt-4 text-sm font-bold">Escalamiento</h3>
+          <p className="mt-1 text-sm text-tinta-2">Pendiente por mÃ¡s de <strong>{HORAS_ESCALAMIENTO} horas</strong> â†’ Â«Sin atenderÂ» y aviso a la jefatura de HumanizaciÃ³n y MisiÃ³n y RSE.</p>
+        </Tarjeta>
+        <Usuarios />
+        <Tarjeta ancha titulo="Centros y servicios" nota="Elige dÃ³nde y escribe el servicio nuevo.">
+          <CentrosYServicios />
+        </Tarjeta>
+      </div>
+    </>
+  )
+}
+=== src\utils\validaciones.ts ===
+/** Devuelve el mensaje de error, o '' si el valor es vÃ¡lido. */
+
+export function validarNombre(valor: string): string {
+  const limpio = valor.trim()
+  if (limpio.length === 0) return 'Escribe un nombre de contacto.'
+  if (limpio.length < 3) return 'El nombre es muy corto.'
+  return ''
+}
+
+export function validarTelefono(valor: string): string {
+  const limpio = valor.trim()
+  if (limpio.length === 0) return 'Escribe un telÃ©fono para que podamos contactarte.'
+  if (!/^[+\d\s()-]+$/.test(limpio)) return 'Usa solo nÃºmeros (puedes incluir +, espacios o guiones).'
+  const digitos = limpio.replace(/\D/g, '')
+  if (digitos.length < 8 || digitos.length > 12) return 'El telÃ©fono debe tener entre 8 y 12 dÃ­gitos.'
+  return ''
+}
+=== src\components\ui\Campos.tsx ===
+import { ChevronDown, TriangleAlert } from 'lucide-react'
+import {
+  useId,
+  type InputHTMLAttributes,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+} from 'react'
+import { cn } from '@/utils/cn'
+
+/** Estilo comÃºn de los campos: borde suave, foco azul, error en rojo. */
+const base =
+  'w-full rounded-md border bg-superficie px-3 text-sm text-tinta shadow-sm transition-colors ' +
+  'placeholder:text-apagado focus:border-uc-blue focus:ring-2 focus:ring-uc-blue/30 focus:outline-none ' +
+  'disabled:cursor-not-allowed disabled:opacity-50'
+
+const bordeNormal = 'border-linea-fuerte/60'
+const bordeError = 'border-uc-red'
+
+interface ComunesCampo {
+  etiqueta: string
+  obligatorio?: boolean
+  /** Mensaje de error, con palabras de la persona. Si viene vacÃ­o no se muestra. */
+  error?: string
+  ayuda?: string
+}
+
+function Etiqueta({
+  htmlFor,
+  texto,
+  obligatorio,
+}: {
+  htmlFor: string
+  texto: string
+  obligatorio?: boolean
+}) {
+  return (
+    <label
+      htmlFor={htmlFor}
+      className="mb-1.5 block text-xs font-bold tracking-wide text-uc-purple-texto uppercase"
+    >
+      {texto}
+      {obligatorio && <span aria-hidden> *</span>}
+    </label>
+  )
+}
+
+function Mensajes({ id, error, ayuda }: { id: string; error?: string; ayuda?: string }) {
+  if (error) {
+    return (
+      <p id={id} role="alert" className="mt-1 flex items-start gap-1 text-[0.75rem] text-uc-red-texto">
+        <TriangleAlert size={13} className="mt-0.5 shrink-0" aria-hidden />
+        {error}
+      </p>
+    )
+  }
+  if (ayuda) {
+    return (
+      <p id={id} className="mt-1 text-[0.75rem] text-tinta-3">
+        {ayuda}
+      </p>
+    )
+  }
+  return null
+}
+
+/* ------------------------------ Texto ------------------------------ */
+
+interface CampoTextoProps
+  extends ComunesCampo, Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {}
+
+export function CampoTexto({
+  etiqueta,
+  obligatorio,
+  error,
+  ayuda,
+  className,
+  ...resto
+}: CampoTextoProps) {
+  const id = useId()
+  const idMensaje = `${id}-mensaje`
+  return (
+    <div className={className}>
+      <Etiqueta htmlFor={id} texto={etiqueta} obligatorio={obligatorio} />
+      <input
+        id={id}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error || ayuda ? idMensaje : undefined}
+        aria-required={obligatorio}
+        className={cn(base, 'h-10', error ? bordeError : bordeNormal)}
+        {...resto}
+      />
+      <Mensajes id={idMensaje} error={error} ayuda={ayuda} />
+    </div>
+  )
+}
+
+/* ------------------------------ Lista ------------------------------ */
+
+interface CampoListaProps
+  extends ComunesCampo, Omit<SelectHTMLAttributes<HTMLSelectElement>, 'id' | 'children'> {
+  opciones: string[]
+  /** Texto de la opciÃ³n vacÃ­a, por ejemplo "Selecciona un centro" */
+  textoVacio: string
+}
+
+export function CampoLista({
+  etiqueta,
+  obligatorio,
+  error,
+  ayuda,
+  opciones,
+  textoVacio,
+  className,
+  ...resto
+}: CampoListaProps) {
+  const id = useId()
+  const idMensaje = `${id}-mensaje`
+  return (
+    <div className={className}>
+      <Etiqueta htmlFor={id} texto={etiqueta} obligatorio={obligatorio} />
+      <div className="relative">
+        <select
+          id={id}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error || ayuda ? idMensaje : undefined}
+          aria-required={obligatorio}
+          className={cn(base, 'h-10 cursor-pointer appearance-none pr-9', error ? bordeError : bordeNormal)}
+          {...resto}
+        >
+          <option value="">{textoVacio}</option>
+          {opciones.map((opcion) => (
+            <option key={opcion} value={opcion}>
+              {opcion}
+            </option>
+          ))}
+        </select>
+        <ChevronDown
+          size={18}
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-tinta-3"
+        />
+      </div>
+      <Mensajes id={idMensaje} error={error} ayuda={ayuda} />
+    </div>
+  )
+}
+
+/* ---------------------------- Texto largo ---------------------------- */
+
+interface CampoTextoLargoProps
+  extends ComunesCampo, Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, 'id'> {}
+
+export function CampoTextoLargo({
+  etiqueta,
+  obligatorio,
+  error,
+  ayuda,
+  className,
+  maxLength,
+  value,
+  ...resto
+}: CampoTextoLargoProps) {
+  const id = useId()
+  const idMensaje = `${id}-mensaje`
+  const largo = typeof value === 'string' ? value.length : 0
+  return (
+    <div className={className}>
+      <Etiqueta htmlFor={id} texto={etiqueta} obligatorio={obligatorio} />
+      <textarea
+        id={id}
+        value={value}
+        maxLength={maxLength}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error || ayuda ? idMensaje : undefined}
+        className={cn(base, 'min-h-28 resize-y py-2.5', error ? bordeError : bordeNormal)}
+        {...resto}
+      />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <Mensajes id={idMensaje} error={error} ayuda={ayuda} />
+        </div>
+        {maxLength && (
+          <p className="mt-1 shrink-0 text-[0.75rem] text-apagado">
+            {largo}/{maxLength}
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+=== src\components\ui\Modal.tsx ===
+import { X, type LucideIcon } from 'lucide-react'
+import { useEffect, useRef, type ReactNode } from 'react'
+import { cn } from '@/utils/cn'
+
+type TonoModal = 'purple' | 'blue' | 'red' | 'green' | 'amber'
+
+const encabezados: Record<TonoModal, string> = {
+  purple: 'gradiente-marca',
+  blue: 'bg-uc-blue',
+  red: 'bg-uc-red',
+  green: 'bg-uc-green',
+  amber: 'bg-uc-amber-fuerte',
+}
+
+interface ModalProps {
+  abierto: boolean
+  onCerrar: () => void
+  titulo: string
+  subtitulo?: string
+  icono?: LucideIcon
+  /** Color del encabezado: el de la acciÃ³n (morado, azul, rojo, verde o Ã¡mbar) */
+  tono?: TonoModal
+  children: ReactNode
+  /** Botones del pie, alineados a la derecha */
+  pie?: ReactNode
+  /** Si es true, solo se cierra con la X o con los botones: ni al pinchar afuera ni con Esc */
+  soloCerrarConX?: boolean
+}
+
+/**
+ * Ventana modal basada en <dialog>: el navegador se encarga del foco, de Esc
+ * y de bloquear lo que hay detrÃ¡s. Ancho mÃ¡ximo 600 px.
+ */
+export function Modal({
+  abierto,
+  onCerrar,
+  titulo,
+  subtitulo,
+  icono: Icono,
+  tono = 'purple',
+  children,
+  pie,
+  soloCerrarConX = false,
+}: ModalProps) {
+  const ref = useRef<HTMLDialogElement>(null)
+
+  useEffect(() => {
+    const dialogo = ref.current
+    if (!dialogo) return
+    if (abierto && !dialogo.open) dialogo.showModal()
+    if (!abierto && dialogo.open) dialogo.close()
+  }, [abierto])
+
+  return (
+    <dialog
+      ref={ref}
+      onClose={onCerrar}
+      onCancel={(e) => soloCerrarConX && e.preventDefault()}
+      onClick={(e) => {
+        // Un clic en el fondo oscuro cierra la ventana (salvo que se pida lo contrario)
+        if (!soloCerrarConX && e.target === e.currentTarget) onCerrar()
+      }}
+      className="m-auto w-[calc(100%-2rem)] max-w-[600px] overflow-hidden rounded-2xl bg-superficie p-0 text-tinta shadow-2xl"
+    >
+      <div className="flex max-h-[85vh] flex-col">
+        <header className={cn('flex items-start gap-3 px-5 py-3.5 text-white', encabezados[tono])}>
+          <div className="min-w-0 flex-1">
+            <h2 className="flex items-center gap-2 text-base font-bold">
+              {Icono && <Icono size={18} aria-hidden />}
+              {titulo}
+            </h2>
+            {subtitulo && <p className="mt-0.5 text-xs opacity-85">{subtitulo}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={onCerrar}
+            aria-label="Cerrar ventana"
+            className="cursor-pointer rounded-md p-1 hover:bg-white/15"
+          >
+            <X size={20} aria-hidden />
+          </button>
+        </header>
+
+        <div className="overflow-y-auto px-5 py-4">{children}</div>
+
+        {pie && (
+          <footer className="flex flex-wrap justify-end gap-2 border-t border-linea px-5 py-3">
+            {pie}
+          </footer>
+        )}
+      </div>
+    </dialog>
+  )
+}

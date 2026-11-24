@@ -2,33 +2,30 @@ import { ClipboardPlus, HandHeart, Inbox, Pause, Phone, Play, UserCheck } from '
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import edificio from '@/assets/edificio-uc-christus.jpg'
-import { AvisoHorario } from '@/components/AvisoHorario'
 import { CarruselAnuncios } from '@/components/CarruselAnuncios'
 import { ProgramasDesplegables } from '@/components/ProgramasDesplegables'
 import { Button } from '@/components/ui/Button'
 import { descripcionDeRol } from '@/config/navegacion'
 import { useAuth } from '@/context/AuthContext'
+import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
 import { cn } from '@/utils/cn'
 import { primerNombre } from '@/utils/formato'
 
-
-const pasos = [
-  { icono: ClipboardPlus, titulo: 'Pides apoyo', texto: 'Respondes unas pocas preguntas en el portal. Es rápido.' },
-  { icono: Inbox, titulo: 'Le llega a un equipo', texto: 'Tu solicitud llega al instante al equipo de Humanización y Misión y RSE.' },
-  { icono: UserCheck, titulo: 'Se asigna a tu contraparte', texto: 'Una persona del equipo se hace cargo y será quien te acompañe.' },
-  { icono: Phone, titulo: 'Te contactamos', texto: 'Te llamamos al teléfono que indicaste, en horario hábil.' },
-]
+const ICONOS_PASOS = [ClipboardPlus, Inbox, UserCheck, Phone]
 
 function ComoAvanza() {
+  const { config } = useConfiguracionPortal()
+  const pasos = config.pasosInicio
   const [paso, setPaso] = useState(0)
   const [pausado, setPausado] = useState(false)
 
-  // Cada paso dura 3 s: la barra de abajo se llena y entonces pasa al siguiente
   useEffect(() => {
-    if (pausado) return
+    if (pausado || pasos.length === 0) return
     const t = setTimeout(() => setPaso((p) => (p + 1) % pasos.length), 3000)
     return () => clearTimeout(t)
-  }, [pausado, paso])
+  }, [pausado, paso, pasos.length])
+
+  const pasoActual = pasos[paso] ?? pasos[0]
 
   return (
     <section aria-label="Cómo avanzará tu solicitud" className="rounded-3xl border border-linea bg-superficie p-5 shadow-sm">
@@ -39,32 +36,36 @@ function ComoAvanza() {
         </Button>
       </div>
       <ol className="grid gap-2 md:grid-cols-4">
-        {pasos.map(({ icono: Icono, titulo }, i) => (
-          <li key={titulo}>
-            <button
-              type="button"
-              onClick={() => setPaso(i)}
-              aria-current={i === paso}
-              className={cn(
-                'relative flex w-full cursor-pointer items-center gap-2.5 overflow-hidden rounded-2xl border p-3 text-left transition-all duration-500 md:flex-col md:text-center',
-                i === paso ? 'gradiente-marca border-transparent text-white' : 'border-linea bg-superficie-2 text-tinta-2',
-              )}
-            >
-              <span className={cn('grid size-9 shrink-0 place-items-center rounded-full', i === paso ? 'bg-white/20' : 'bg-superficie text-uc-purple-texto')}>
-                <Icono size={18} aria-hidden />
-              </span>
-              <span className="text-sm font-bold">
-                {i + 1}. {titulo}
-              </span>
-              {i === paso && !pausado && <span key={paso} className="barra-avance absolute inset-x-0 bottom-0 h-1 bg-white/70" aria-hidden />}
-            </button>
-          </li>
-        ))}
+        {pasos.map(({ titulo }, i) => {
+          const Icono = ICONOS_PASOS[i % ICONOS_PASOS.length]
+          return (
+            <li key={`${titulo}-${i}`}>
+              <button
+                type="button"
+                onClick={() => setPaso(i)}
+                aria-current={i === paso}
+                className={cn(
+                  'relative flex w-full cursor-pointer items-center gap-2.5 overflow-hidden rounded-2xl border p-3 text-left transition-all duration-500 md:flex-col md:text-center',
+                  i === paso ? 'gradiente-marca border-transparent text-white' : 'border-linea bg-superficie-2 text-tinta-2',
+                )}
+              >
+                <span className={cn('grid size-9 shrink-0 place-items-center rounded-full', i === paso ? 'bg-white/20' : 'bg-superficie text-uc-purple-texto')}>
+                  <Icono size={18} aria-hidden />
+                </span>
+                <span className="text-sm font-bold">
+                  {i + 1}. {titulo}
+                </span>
+                {i === paso && !pausado && <span key={paso} className="barra-avance absolute inset-x-0 bottom-0 h-1 bg-white/70" aria-hidden />}
+              </button>
+            </li>
+          )
+        })}
       </ol>
-      <p className="mt-3 rounded-xl bg-uc-purple-light px-4 py-2.5 text-sm text-uc-purple-texto" aria-live="polite">
-        {pasos[paso].texto}
-      </p>
-      <AvisoHorario className="mt-2" />
+      {pasoActual && (
+        <p className="mt-3 rounded-xl bg-uc-purple-light px-4 py-2.5 text-sm text-uc-purple-texto" aria-live="polite">
+          {pasoActual.texto}
+        </p>
+      )}
     </section>
   )
 }
@@ -75,7 +76,6 @@ export function Inicio() {
 
   return (
     <div className="space-y-6">
-      {/* Bienvenida */}
       <header className="animar-aparecer gradiente-marca hero-tech destello relative overflow-hidden rounded-3xl p-6 text-white shadow-lg md:p-9">
         <span className="rejilla absolute inset-0" aria-hidden />
         <img src={edificio} alt="" aria-hidden className="absolute inset-0 size-full object-cover opacity-15 mix-blend-luminosity" />

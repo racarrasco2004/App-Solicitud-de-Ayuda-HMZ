@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/Button'
 import { CampoLista } from '@/components/ui/Campos'
 import { EstadoVacio } from '@/components/ui/EstadoVacio'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { estaSinAtender, HORAS_ESCALAMIENTO } from '@/config/escalamiento'
-import { useSolicitudes } from '@/context/SolicitudesContext'
+import { horasDesde } from '@/config/escalamiento'
 import { useCatalogos } from '@/context/CatalogosContext'
+import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
+import { useSolicitudes } from '@/context/SolicitudesContext'
 import type { Estado, Solicitud } from '@/types'
 import { cn } from '@/utils/cn'
 import { fechaYHora } from '@/utils/formato'
@@ -31,8 +32,10 @@ function Dato({ etiqueta, children }: { etiqueta: string; children: React.ReactN
 function Gestion({ s }: { s: Solicitud }) {
   const { actualizar } = useSolicitudes()
   const { responsablesActivos } = useCatalogos()
-  // Si el responsable actual fue desactivado, igual se muestra para no perderlo
-  const opciones = s.responsable && !responsablesActivos.includes(s.responsable) ? [s.responsable, ...responsablesActivos] : responsablesActivos
+  const opciones =
+    s.responsable && !responsablesActivos.includes(s.responsable)
+      ? [s.responsable, ...responsablesActivos]
+      : responsablesActivos
   const [estado, setEstado] = useState<Estado>(s.estado)
   const [responsable, setResponsable] = useState(s.responsable ?? '')
   const [guardando, setGuardando] = useState(false)
@@ -106,6 +109,7 @@ function Gestion({ s }: { s: Solicitud }) {
 export function DetalleSolicitud() {
   const { id } = useParams()
   const { solicitudes, cargando } = useSolicitudes()
+  const { config } = useConfiguracionPortal()
   const s = solicitudes.find((x) => x.id === id)
 
   if (cargando && !s) return <p className="p-8 text-center text-sm text-tinta-3">Cargando…</p>
@@ -121,6 +125,8 @@ export function DetalleSolicitud() {
     )
   }
 
+  const sinAtender = s.estado === 'Pendiente' && horasDesde(s.fecha) > config.horasEscalamiento
+
   return (
     <>
       <Link to="/solicitudes" className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-uc-purple-texto hover:underline">
@@ -128,10 +134,10 @@ export function DetalleSolicitud() {
       </Link>
       <PageHeader titulo={s.id} subtitulo={`Recibida el ${fechaYHora(s.fecha)}`} acciones={<EstadoBadge estado={s.estado} />} />
 
-      {estaSinAtender(s) && (
+      {sinAtender && (
         <p className="mb-4 flex items-start gap-2 rounded-lg border border-uc-red-borde bg-uc-red-light p-3 text-sm text-uc-red-texto">
           <TriangleAlert size={18} className="mt-0.5 shrink-0" aria-hidden />
-          Lleva más de {HORAS_ESCALAMIENTO} horas pendiente. Debe escalarse a la jefatura de Humanización y Misión y RSE.
+          Lleva más de {config.horasEscalamiento} horas pendiente. Debe escalarse a la jefatura de Humanización y Misión y RSE.
         </p>
       )}
 
@@ -147,6 +153,7 @@ export function DetalleSolicitud() {
             <Dato etiqueta="Centro">{s.subcentro}</Dato>
             <Dato etiqueta="Servicio">{s.servicio}</Dato>
             <Dato etiqueta="Tipo de centro">{s.centro}</Dato>
+            {s.apoyoEspiritual && <Dato etiqueta="Apoyo espiritual">{s.apoyoEspiritual}</Dato>}
             <Dato etiqueta="Religión o creencia">{s.religion}</Dato>
           </dl>
           <div className="mt-4">

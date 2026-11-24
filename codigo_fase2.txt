@@ -1,0 +1,846 @@
+﻿=== package.json ===
+{
+  "name": "apoyo-espiritual",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@azure/msal-browser": "^5.30.0",
+    "@fontsource/kalam": "^5.3.0",
+    "@tailwindcss/vite": "^4.3.5",
+    "lucide-react": "^1.73.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5",
+    "recharts": "^3.10.1",
+    "tailwindcss": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "oxlint": "^1.90.0",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.6"
+  }
+}
+=== src\App.tsx ===
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AppLayout } from '@/components/layout/AppLayout'
+import { RutaProtegida } from '@/components/RutaProtegida'
+import { AnunciosProvider } from '@/context/AnunciosContext'
+import { AjustesProvider } from '@/context/AjustesContext'
+import { CatalogosProvider } from '@/context/CatalogosContext'
+import { AuthProvider } from '@/context/AuthContext'
+import { SolicitudesProvider } from '@/context/SolicitudesContext'
+import { Anuncios } from '@/pages/Anuncios'
+import { Administracion } from '@/pages/Administracion'
+import { DetalleSolicitud } from '@/pages/DetalleSolicitud'
+import { Estadisticas } from '@/pages/Estadisticas'
+import { Solicitudes } from '@/pages/Solicitudes'
+import { Inicio } from '@/pages/Inicio'
+import { Login } from '@/pages/Login'
+import { MisSolicitudes } from '@/pages/MisSolicitudes'
+import { NoEncontrada } from '@/pages/NoEncontrada'
+import { NuevaSolicitud } from '@/pages/NuevaSolicitud'
+
+export default function App() {
+  return (
+    <AjustesProvider>
+      <CatalogosProvider>
+      <AuthProvider>
+        <SolicitudesProvider>
+          <AnunciosProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route element={<RutaProtegida />}>
+                <Route element={<AppLayout />}>
+                  <Route index element={<Inicio />} />
+                  <Route path="programas" element={<Navigate to="/#programas" replace />} />
+                  <Route path="nueva-solicitud" element={<NuevaSolicitud />} />
+                  <Route path="mis-solicitudes" element={<MisSolicitudes />} />
+                  <Route path="solicitudes" element={<Solicitudes />} />
+                  <Route path="solicitudes/:id" element={<DetalleSolicitud />} />
+                  <Route path="estadisticas" element={<Estadisticas />} />
+                  <Route path="anuncios" element={<Anuncios />} />
+                  <Route path="administracion" element={<Administracion />} />
+                  <Route path="*" element={<NoEncontrada />} />
+                </Route>
+              </Route>
+            </Routes>
+          </BrowserRouter>
+          </AnunciosProvider>
+        </SolicitudesProvider>
+      </AuthProvider>
+      </CatalogosProvider>
+    </AjustesProvider>
+  )
+}
+=== src\pages\Estadisticas.tsx ===
+import { useMemo, type ReactNode } from 'react'
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { MapaDeCalor } from '@/components/MapaDeCalor'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { useSolicitudes } from '@/context/SolicitudesContext'
+import type { Solicitud } from '@/types'
+
+// Colores en hexadecimal porque los grÃ¡ficos SVG no leen variables CSS; se ven bien en claro y oscuro.
+const MORADO = '#8a3fa8'
+const COLORES_ESTADO: Record<string, string> = { Pendiente: '#d99a1c', 'En proceso': '#2f7fc4', Cerrada: '#2e9d6a' }
+const EJE = '#8a8a99'
+
+function contar(lista: Solicitud[], clave: (s: Solicitud) => string) {
+  const m = new Map<string, number>()
+  lista.forEach((s) => m.set(clave(s), (m.get(clave(s)) ?? 0) + 1))
+  return [...m.entries()].map(([nombre, total]) => ({ nombre, total }))
+}
+
+function Tarjeta({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-linea bg-superficie p-4 shadow-sm">
+      <h2 className="mb-2 text-sm font-bold text-tinta">{titulo}</h2>
+      <div className="h-64">{children}</div>
+    </section>
+  )
+}
+
+function Barras({ datos, horizontal = false }: { datos: { nombre: string; total: number }[]; horizontal?: boolean }) {
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <BarChart data={datos} layout={horizontal ? 'vertical' : 'horizontal'} margin={{ left: horizontal ? 20 : 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke={EJE} strokeOpacity={0.25} />
+        {horizontal ? (
+          <>
+            <XAxis type="number" allowDecimals={false} tick={{ fill: EJE, fontSize: 11 }} />
+            <YAxis type="category" dataKey="nombre" width={130} tick={{ fill: EJE, fontSize: 11 }} />
+          </>
+        ) : (
+          <>
+            <XAxis dataKey="nombre" tick={{ fill: EJE, fontSize: 11 }} />
+            <YAxis allowDecimals={false} tick={{ fill: EJE, fontSize: 11 }} />
+          </>
+        )}
+        <Tooltip />
+        <Bar isAnimationActive={false} dataKey="total" name="Solicitudes" fill={MORADO} radius={[4, 4, 0, 0]} />
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
+export function Estadisticas() {
+  const { solicitudes } = useSolicitudes()
+
+  const d = useMemo(() => {
+    const porMes = contar(solicitudes, (s) => s.fecha.slice(0, 7)).sort((a, b) => a.nombre.localeCompare(b.nombre))
+    return {
+      estado: contar(solicitudes, (s) => s.estado),
+      mes: porMes,
+      centro: contar(solicitudes, (s) => s.subcentro).sort((a, b) => b.total - a.total).slice(0, 8),
+      tipo: contar(solicitudes, (s) => s.tipoSolicitante),
+      programa: contar(solicitudes, (s) => s.programa ?? 'Apoyo espiritual'),
+    }
+  }, [solicitudes])
+
+  return (
+    <>
+      <PageHeader titulo="EstadÃ­sticas" subtitulo={`Indicadores de ${solicitudes.length} solicitudes.`} />
+      <div className="mb-4">
+        <MapaDeCalor solicitudes={solicitudes} />
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Tarjeta titulo="Por estado">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie isAnimationActive={false} data={d.estado} dataKey="total" nameKey="nombre" innerRadius={50} outerRadius={85} label>
+                {d.estado.map((e) => <Cell key={e.nombre} fill={COLORES_ESTADO[e.nombre] ?? MORADO} />)}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </Tarjeta>
+        <Tarjeta titulo="Por mes"><Barras datos={d.mes} /></Tarjeta>
+        <Tarjeta titulo="Por centro (los 8 con mÃ¡s solicitudes)"><Barras datos={d.centro} horizontal /></Tarjeta>
+        <Tarjeta titulo="Por quiÃ©n pide"><Barras datos={d.tipo} /></Tarjeta>
+        <Tarjeta titulo="Por programa"><Barras datos={d.programa} /></Tarjeta>
+      </div>
+    </>
+  )
+}
+=== src\pages\Inicio.tsx ===
+import { ClipboardPlus, HandHeart, Inbox, Pause, Phone, Play, UserCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import edificio from '@/assets/edificio-uc-christus.jpg'
+import { AvisoHorario } from '@/components/AvisoHorario'
+import { CarruselAnuncios } from '@/components/CarruselAnuncios'
+import { ProgramasDesplegables } from '@/components/ProgramasDesplegables'
+import { Button } from '@/components/ui/Button'
+import { descripcionDeRol } from '@/config/navegacion'
+import { useAuth } from '@/context/AuthContext'
+import { cn } from '@/utils/cn'
+import { primerNombre } from '@/utils/formato'
+
+
+const pasos = [
+  { icono: ClipboardPlus, titulo: 'Pides apoyo', texto: 'Respondes unas pocas preguntas en el portal. Es rÃ¡pido.' },
+  { icono: Inbox, titulo: 'Le llega a un equipo', texto: 'Tu solicitud llega al instante al equipo de HumanizaciÃ³n y MisiÃ³n y RSE.' },
+  { icono: UserCheck, titulo: 'Se asigna a tu contraparte', texto: 'Una persona del equipo se hace cargo y serÃ¡ quien te acompaÃ±e.' },
+  { icono: Phone, titulo: 'Te contactamos', texto: 'Te llamamos al telÃ©fono que indicaste, en horario hÃ¡bil.' },
+]
+
+function ComoAvanza() {
+  const [paso, setPaso] = useState(0)
+  const [pausado, setPausado] = useState(false)
+
+  // Cada paso dura 3 s: la barra de abajo se llena y entonces pasa al siguiente
+  useEffect(() => {
+    if (pausado) return
+    const t = setTimeout(() => setPaso((p) => (p + 1) % pasos.length), 3000)
+    return () => clearTimeout(t)
+  }, [pausado, paso])
+
+  return (
+    <section aria-label="CÃ³mo avanzarÃ¡ tu solicitud" className="rounded-3xl border border-linea bg-superficie p-5 shadow-sm">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h2 className="fuente-cercana text-2xl font-bold text-uc-purple-texto">CÃ³mo avanzarÃ¡ tu solicitud</h2>
+        <Button variante="outline" tamano="sm" icono={pausado ? Play : Pause} onClick={() => setPausado((p) => !p)}>
+          {pausado ? 'Reanudar animaciÃ³n' : 'Pausar animaciÃ³n'}
+        </Button>
+      </div>
+      <ol className="grid gap-2 md:grid-cols-4">
+        {pasos.map(({ icono: Icono, titulo }, i) => (
+          <li key={titulo}>
+            <button
+              type="button"
+              onClick={() => setPaso(i)}
+              aria-current={i === paso}
+              className={cn(
+                'relative flex w-full cursor-pointer items-center gap-2.5 overflow-hidden rounded-2xl border p-3 text-left transition-all duration-500 md:flex-col md:text-center',
+                i === paso ? 'gradiente-marca border-transparent text-white' : 'border-linea bg-superficie-2 text-tinta-2',
+              )}
+            >
+              <span className={cn('grid size-9 shrink-0 place-items-center rounded-full', i === paso ? 'bg-white/20' : 'bg-superficie text-uc-purple-texto')}>
+                <Icono size={18} aria-hidden />
+              </span>
+              <span className="text-sm font-bold">
+                {i + 1}. {titulo}
+              </span>
+              {i === paso && !pausado && <span key={paso} className="barra-avance absolute inset-x-0 bottom-0 h-1 bg-white/70" aria-hidden />}
+            </button>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 rounded-xl bg-uc-purple-light px-4 py-2.5 text-sm text-uc-purple-texto" aria-live="polite">
+        {pasos[paso].texto}
+      </p>
+      <AvisoHorario className="mt-2" />
+    </section>
+  )
+}
+
+export function Inicio() {
+  const { usuario } = useAuth()
+  if (!usuario) return null
+
+  return (
+    <div className="space-y-6">
+      {/* Bienvenida */}
+      <header className="animar-aparecer gradiente-marca hero-tech destello relative overflow-hidden rounded-3xl p-6 text-white shadow-lg md:p-9">
+        <span className="rejilla absolute inset-0" aria-hidden />
+        <img src={edificio} alt="" aria-hidden className="absolute inset-0 size-full object-cover opacity-15 mix-blend-luminosity" />
+        <span className="flotar absolute -top-10 right-10 size-44 rounded-full bg-white/10 blur-sm" aria-hidden />
+        <span className="flotar absolute -right-8 bottom-4 size-28 rounded-full bg-white/10" style={{ animationDelay: '-3s' }} aria-hidden />
+        <div className="relative max-w-2xl">
+          <h1 className="fuente-cercana text-4xl leading-tight font-bold md:text-5xl">Hola, {primerNombre(usuario.nombre)}</h1>
+          <p className="mt-2 text-base text-white/90">{descripcionDeRol[usuario.rol]}</p>
+          <div className="mt-5 flex flex-wrap gap-2.5">
+            <Link to="/nueva-solicitud">
+              <Button variante="outline" tamano="lg" relieve icono={HandHeart} tabIndex={-1} className="border-white !bg-white !text-uc-purple">
+                Pedir apoyo
+              </Button>
+            </Link>
+            <Link to="/#programas">
+              <Button variante="ghost" tamano="lg" tabIndex={-1} className="!text-white ring-1 ring-white/60 hover:!bg-white/15">
+                Conocer los programas
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <div className="animar-aparecer"><ComoAvanza /></div>
+
+      <ProgramasDesplegables />
+
+      <CarruselAnuncios />
+    </div>
+  )
+}
+=== src\components\MapaDeCalor.tsx ===
+import { useMemo, useState } from 'react'
+import { CampoLista } from '@/components/ui/Campos'
+import type { Solicitud } from '@/types'
+
+type Dim = { nombre: string; valor: (s: Solicitud) => string; orden?: (a: string, b: string) => number }
+
+const mes = (iso: string) => iso.slice(0, 7)
+const etiquetaMes = (m: string) =>
+  new Intl.DateTimeFormat('es-CL', { month: 'short', year: '2-digit' }).format(new Date(`${m}-15T12:00:00`)).replace('.', '')
+
+const filas: Dim[] = [
+  { nombre: 'Centro', valor: (s) => s.subcentro },
+  { nombre: 'Servicio', valor: (s) => s.servicio },
+  { nombre: 'Tipo de centro', valor: (s) => s.centro },
+]
+const columnas: Dim[] = [
+  { nombre: 'Mes', valor: (s) => mes(s.fecha), orden: (a, b) => a.localeCompare(b) },
+  { nombre: 'Apoyo para', valor: (s) => s.tipoSolicitante },
+  { nombre: 'Estado', valor: (s) => s.estado },
+  { nombre: 'Programa', valor: (s) => s.programa ?? 'Sin programa' },
+]
+const MAX_FILAS = 15
+
+// Escala de calor: poco = amarillo, medio = naranjo, harto = rojo
+const PUNTOS: [number, [number, number, number]][] = [
+  [0, [255, 236, 153]],
+  [0.35, [253, 186, 80]],
+  [0.65, [239, 98, 44]],
+  [1, [185, 28, 28]],
+]
+function colorCalor(t: number): string {
+  for (let i = 1; i < PUNTOS.length; i++) {
+    const [t1, c1] = PUNTOS[i]
+    const [t0, c0] = PUNTOS[i - 1]
+    if (t <= t1) {
+      const k = (t - t0) / (t1 - t0)
+      return `rgb(${c0.map((v, j) => Math.round(v + (c1[j] - v) * k)).join(' ')})`
+    }
+  }
+  return 'rgb(185 28 28)'
+}
+const GRADIENTE = `linear-gradient(90deg, ${PUNTOS.map(([t, c]) => `rgb(${c.join(' ')}) ${t * 100}%`).join(', ')})`
+
+/**
+ * Mapa de calor: cuÃ¡ntas solicitudes hay en cada cruce de dos dimensiones
+ * (por ejemplo, centro por mes). MÃ¡s oscuro = mÃ¡s solicitudes. Cada celda muestra su nÃºmero,
+ * asÃ­ no depende solo del color.
+ */
+export function MapaDeCalor({ solicitudes }: { solicitudes: Solicitud[] }) {
+  const [f, setF] = useState('Centro')
+  const [c, setC] = useState('Mes')
+  const filaDim = filas.find((d) => d.nombre === f) ?? filas[0]
+  const colDim = columnas.find((d) => d.nombre === c) ?? columnas[0]
+
+  const { cols, rows, max, oculto } = useMemo(() => {
+    const m = new Map<string, Map<string, number>>()
+    const totalCol = new Map<string, number>()
+    solicitudes.forEach((s) => {
+      const r = filaDim.valor(s)
+      const k = colDim.valor(s)
+      const fila = m.get(r) ?? new Map<string, number>()
+      fila.set(k, (fila.get(k) ?? 0) + 1)
+      m.set(r, fila)
+      totalCol.set(k, (totalCol.get(k) ?? 0) + 1)
+    })
+    const cols = [...totalCol.keys()].sort(colDim.orden ?? ((a, b) => (totalCol.get(b) ?? 0) - (totalCol.get(a) ?? 0)))
+    const todas = [...m.entries()]
+      .map(([nombre, fila]) => ({ nombre, fila, total: [...fila.values()].reduce((x, y) => x + y, 0) }))
+      .sort((a, b) => b.total - a.total)
+    const rows = todas.slice(0, MAX_FILAS)
+    let max = 0
+    rows.forEach((r) => r.fila.forEach((v) => (max = Math.max(max, v))))
+    return { cols, rows, max, oculto: todas.length - rows.length }
+  }, [solicitudes, filaDim, colDim])
+
+  const caliente = useMemo(() => {
+    let mejor: { fila: string; col: string; v: number } | null = null
+    rows.forEach((r) => r.fila.forEach((v, k) => { if (!mejor || v > mejor.v) mejor = { fila: r.nombre, col: k, v } }))
+    return mejor as { fila: string; col: string; v: number } | null
+  }, [rows])
+
+  const etiquetaCol = (k: string) => (colDim.nombre === 'Mes' ? etiquetaMes(k) : k)
+  const fondo = (v: number) => (v === 0 ? 'transparent' : colorCalor(max > 0 ? v / max : 0))
+  const textoClaro = (v: number) => max > 0 && v / max > 0.6
+
+  return (
+    <section className="rounded-2xl border border-linea bg-superficie p-4 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-bold text-tinta">Mapa de calor</h2>
+          <p className="text-xs text-tinta-3">DÃ³nde se concentran las solicitudes. Amarillo = pocas, rojo = muchas.</p>
+        </div>
+        <div className="flex gap-3">
+          <CampoLista etiqueta="Filas" textoVacio="" opciones={filas.map((d) => d.nombre)} value={f} onChange={(e) => setF(e.target.value || 'Centro')} />
+          <CampoLista etiqueta="Columnas" textoVacio="" opciones={columnas.map((d) => d.nombre)} value={c} onChange={(e) => setC(e.target.value || 'Mes')} />
+        </div>
+      </div>
+
+      {caliente && caliente.v > 0 && (
+        <p className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-uc-red-borde bg-uc-red-light px-3 py-2 text-sm text-uc-red-texto">
+          <span aria-hidden>ðŸ”¥</span>
+          <span>
+            Punto mÃ¡s caliente: <strong>{caliente.fila}</strong> Â· {etiquetaCol(caliente.col)} â€” <strong>{caliente.v}</strong>{' '}
+            {caliente.v === 1 ? 'solicitud' : 'solicitudes'}
+          </span>
+        </p>
+      )}
+
+      {rows.length === 0 ? (
+        <p className="py-8 text-center text-sm text-tinta-3">AÃºn no hay solicitudes para mostrar.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-separate border-spacing-1 text-sm">
+            <caption className="sr-only">Solicitudes por {f.toLowerCase()} y {c.toLowerCase()}</caption>
+            <thead>
+              <tr>
+                <th scope="col" className="px-2 py-1 text-left text-[0.6875rem] font-bold tracking-wide text-tinta-3 uppercase">{f}</th>
+                {cols.map((k) => (
+                  <th key={k} scope="col" className="min-w-14 px-1 py-1 text-center text-[0.6875rem] font-bold tracking-wide text-tinta-3 uppercase">{etiquetaCol(k)}</th>
+                ))}
+                <th scope="col" className="px-2 py-1 text-center text-[0.6875rem] font-bold tracking-wide text-tinta-3 uppercase">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.nombre}>
+                  <th scope="row" className="max-w-56 truncate px-2 py-1 text-left text-xs font-semibold text-tinta" title={r.nombre}>{r.nombre}</th>
+                  {cols.map((k) => {
+                    const v = r.fila.get(k) ?? 0
+                    return (
+                      <td
+                        key={k}
+                        title={`${r.nombre} Â· ${etiquetaCol(k)}: ${v}`}
+                        style={{ backgroundColor: fondo(v) }}
+                        className={`rounded-lg px-1 py-3 text-center text-sm font-extrabold ${v === 0 ? 'bg-superficie-2 font-normal text-tinta-3/60' : textoClaro(v) ? 'text-white' : 'text-gray-900'}`}
+                      >
+                        {v}
+                      </td>
+                    )
+                  })}
+                  <td className="px-2 py-1 text-center text-xs font-bold text-tinta">{r.total}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-tinta-3">
+        <span aria-hidden className="flex items-center gap-2">
+          Pocas
+          <span className="h-3 w-40 rounded-full" style={{ backgroundImage: GRADIENTE }} />
+          Muchas ({max})
+        </span>
+        {oculto > 0 && <span>Se muestran las {MAX_FILAS} filas con mÃ¡s solicitudes ({oculto} mÃ¡s sin mostrar).</span>}
+      </div>
+    </section>
+  )
+}
+=== src\components\ui\Kpi.tsx ===
+import type { LucideIcon } from 'lucide-react'
+import { cn } from '@/utils/cn'
+
+const tonos = {
+  purple: 'bg-uc-purple-light text-uc-purple-texto',
+  amber: 'bg-uc-amber-light text-uc-amber-texto',
+  blue: 'bg-uc-blue-light text-uc-blue-texto',
+  green: 'bg-uc-green-light text-uc-green-texto',
+  red: 'bg-uc-red-light text-uc-red-texto',
+}
+
+export function Kpi({
+  icono: Icono,
+  etiqueta,
+  valor,
+  tono = 'purple',
+}: {
+  icono: LucideIcon
+  etiqueta: string
+  valor: number
+  tono?: keyof typeof tonos
+}) {
+  return (
+    <div className="alza relative flex items-center gap-3 overflow-hidden rounded-2xl border border-linea bg-superficie p-3.5 shadow-sm">
+      <span className="gradiente-marca absolute inset-x-0 top-0 h-0.5 opacity-80" aria-hidden />
+      <span className={cn('grid size-10 shrink-0 place-items-center rounded-xl ring-1 ring-current/15', tonos[tono])}>
+        <Icono size={20} aria-hidden />
+      </span>
+      <div>
+        <p className="texto-gradiente text-2xl leading-none font-extrabold tabular-nums">{valor}</p>
+        <p className="mt-1 text-xs text-tinta-3">{etiqueta}</p>
+      </div>
+    </div>
+  )
+}
+=== src\components\AvisoHorario.tsx ===
+import { Clock } from 'lucide-react'
+import { AVISO_HORARIO } from '@/config/marca'
+
+export function AvisoHorario({ className = '' }: { className?: string }) {
+  return (
+    <p className={`flex items-start gap-2 rounded-2xl bg-uc-blue-light px-4 py-2.5 text-sm text-uc-blue-texto ${className}`}>
+      <Clock size={18} className="mt-0.5 shrink-0" aria-hidden />
+      {AVISO_HORARIO}
+    </p>
+  )
+}
+=== src\context\SolicitudesContext.tsx ===
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react'
+import { solicitudesRepository } from '@/services'
+import type { CambiosSolicitud, DatosNuevaSolicitud, Solicitud } from '@/types'
+import { useAuth } from './AuthContext'
+
+interface SolicitudesValor {
+  solicitudes: Solicitud[]
+  cargando: boolean
+  error: string
+  crear: (datos: DatosNuevaSolicitud) => Promise<Solicitud>
+  actualizar: (id: string, cambios: CambiosSolicitud) => Promise<void>
+  recargar: () => Promise<void>
+}
+
+const SolicitudesContext = createContext<SolicitudesValor | null>(null)
+
+export function SolicitudesProvider({ children }: { children: ReactNode }) {
+  const { usuario } = useAuth()
+  const [solicitudes, setSolicitudes] = useState<Solicitud[]>([])
+  const [cargando, setCargando] = useState(false)
+  const [error, setError] = useState('')
+
+  const recargar = useCallback(async () => {
+    setCargando(true)
+    setError('')
+    try {
+      setSolicitudes(await solicitudesRepository.listar())
+    } catch {
+      setError('No pudimos cargar las solicitudes. Intenta de nuevo.')
+    } finally {
+      setCargando(false)
+    }
+  }, [])
+
+  // Carga las solicitudes cuando hay una sesiÃ³n iniciada
+  useEffect(() => {
+    if (usuario) void recargar()
+    else setSolicitudes([])
+  }, [usuario, recargar])
+
+  const crear = useCallback(
+    async (datos: DatosNuevaSolicitud) => {
+      if (!usuario) throw new Error('Debes iniciar sesiÃ³n para crear una solicitud.')
+      const nueva = await solicitudesRepository.crear(datos, usuario.correo)
+      setSolicitudes((actuales) => [nueva, ...actuales])
+      return nueva
+    },
+    [usuario],
+  )
+
+  const actualizar = useCallback(async (id: string, cambios: CambiosSolicitud) => {
+    const actualizada = await solicitudesRepository.actualizar(id, cambios)
+    setSolicitudes((actuales) => actuales.map((s) => (s.id === id ? actualizada : s)))
+  }, [])
+
+  const valor = useMemo(
+    () => ({ solicitudes, cargando, error, crear, actualizar, recargar }),
+    [solicitudes, cargando, error, crear, actualizar, recargar],
+  )
+
+  return <SolicitudesContext.Provider value={valor}>{children}</SolicitudesContext.Provider>
+}
+
+export function useSolicitudes(): SolicitudesValor {
+  const contexto = useContext(SolicitudesContext)
+  if (!contexto) throw new Error('useSolicitudes debe usarse dentro de <SolicitudesProvider>.')
+  return contexto
+}
+=== src\context\AnunciosContext.tsx ===
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
+import { anunciosIniciales, fotosDeEjemplo } from '@/data/anunciosIniciales'
+import type { Anuncio } from '@/types'
+import { guardarJSON, leerJSON } from '@/utils/almacenamiento'
+
+/**
+ * Anuncios y campaÃ±as editables desde la pestaÃ±a Â«AnunciosÂ».
+ * Hoy se guardan en el navegador; despuÃ©s pasan a una lista de SharePoint con biblioteca de imÃ¡genes.
+ */
+const CLAVE = 'portal-apoyo:anuncios:v1'
+
+export type DatosAnuncio = Pick<Anuncio, 'titulo' | 'texto' | 'imagen'>
+
+interface AnunciosValor {
+  anuncios: Anuncio[]
+  /** Solo los activos, en orden: lo que ve el solicitante */
+  visibles: Anuncio[]
+  agregar: (datos: DatosAnuncio) => void
+  actualizar: (id: string, datos: DatosAnuncio) => void
+  alternar: (id: string) => void
+  eliminar: (id: string) => void
+  mover: (id: string, direccion: -1 | 1) => void
+  /** Convierte la referencia guardada en una direcciÃ³n de imagen que se puede mostrar */
+  srcDe: (imagen: string) => string
+}
+
+const Contexto = createContext<AnunciosValor | null>(null)
+
+export function AnunciosProvider({ children }: { children: ReactNode }) {
+  const [anuncios, setAnuncios] = useState<Anuncio[]>(() => leerJSON<Anuncio[]>(CLAVE) ?? anunciosIniciales)
+
+  const aplicar = useCallback((fn: (lista: Anuncio[]) => Anuncio[]) => {
+    setAnuncios((previa) => {
+      const nueva = fn(previa)
+      guardarJSON(CLAVE, nueva)
+      return nueva
+    })
+  }, [])
+
+  const valor = useMemo<AnunciosValor>(
+    () => ({
+      anuncios,
+      visibles: anuncios.filter((a) => a.activo),
+      agregar: (d) => aplicar((l) => [...l, { ...d, id: `a${Date.now()}`, activo: true }]),
+      actualizar: (id, d) => aplicar((l) => l.map((a) => (a.id === id ? { ...a, ...d } : a))),
+      alternar: (id) => aplicar((l) => l.map((a) => (a.id === id ? { ...a, activo: !a.activo } : a))),
+      eliminar: (id) => aplicar((l) => l.filter((a) => a.id !== id)),
+      mover: (id, dir) =>
+        aplicar((l) => {
+          const i = l.findIndex((a) => a.id === id)
+          const j = i + dir
+          if (i < 0 || j < 0 || j >= l.length) return l
+          const copia = [...l]
+          ;[copia[i], copia[j]] = [copia[j], copia[i]]
+          return copia
+        }),
+      srcDe: (imagen) => (imagen.startsWith('ejemplo:') ? (fotosDeEjemplo[imagen.slice(8)] ?? '') : imagen),
+    }),
+    [anuncios, aplicar],
+  )
+
+  return <Contexto.Provider value={valor}>{children}</Contexto.Provider>
+}
+
+export function useAnuncios() {
+  const c = useContext(Contexto)
+  if (!c) throw new Error('useAnuncios debe usarse dentro de AnunciosProvider')
+  return c
+}
+=== C:\Users\racarrasco\OneDrive - UC CHRISTUS Chile\Escritorio\apoyo-espiritual\src\config\enlaces.ts ===
+/** Enlace de agenda online de PAEC. */
+export const FORMULARIO_PAEC_URL = 'https://0cb0b0e7b8216280a940f74d544c664f46ab2348.agenda.softwaremedilink.com/agenda/sucursal'
+
+export const TEXTO_UIC =
+  'La Unidad de IntervenciÃ³n en Crisis (UIC) no se solicita por este portal. Para pedir su apoyo, comunÃ­cate con el prevencionista de riesgos de tu centro. AquÃ­ no se guarda ninguna solicitud.'
+=== C:\Users\racarrasco\OneDrive - UC CHRISTUS Chile\Escritorio\apoyo-espiritual\src\config\escalamiento.ts ===
+import type { Solicitud } from '@/types'
+
+/**
+ * Horas que puede estar una solicitud pendiente antes de escalarse (definido por la jefatura: 24 h).
+ * Se escala a la jefatura de HumanizaciÃ³n y MisiÃ³n y RSE. Para cambiarlo, edita solo este nÃºmero.
+ */
+export const HORAS_ESCALAMIENTO = 24
+
+export function horasDesde(iso: string): number {
+  return (Date.now() - new Date(iso).getTime()) / 3_600_000
+}
+
+/** Pendiente y sin responsable por mÃ¡s horas de las permitidas. */
+export function estaSinAtender(s: Solicitud): boolean {
+  return s.estado === 'Pendiente' && horasDesde(s.fecha) > HORAS_ESCALAMIENTO
+}
+=== C:\Users\racarrasco\OneDrive - UC CHRISTUS Chile\Escritorio\apoyo-espiritual\src\config\marca.ts ===
+/**
+ * HumanizaciÃ³n y MisiÃ³n y RSE son dos Ã¡reas que trabajan juntas:
+ * siempre se nombran y se muestran las dos, nunca una sola.
+ */
+export const AREAS = 'HumanizaciÃ³n y MisiÃ³n y RSE'
+
+/** Aviso de atenciÃ³n: se muestra al solicitante en el formulario y en el inicio. */
+export const AVISO_HORARIO =
+  'Nuestro equipo atiende de lunes a viernes, en horario administrativo. Las solicitudes recibidas fuera de ese horario se gestionan el siguiente dÃ­a hÃ¡bil.'
+=== C:\Users\racarrasco\OneDrive - UC CHRISTUS Chile\Escritorio\apoyo-espiritual\src\config\microsoft.ts ===
+/**
+ * Datos de la app registrada en Microsoft Entra ID (los entrega TI).
+ * Se ponen en un archivo .env.local (ver .env.example). Si faltan, el portal funciona
+ * en MODO DEMOSTRACIÃ“N con el inicio de sesiÃ³n simulado.
+ */
+const clientId = (import.meta.env.VITE_ENTRA_CLIENT_ID as string | undefined)?.trim() ?? ''
+const tenantId = (import.meta.env.VITE_ENTRA_TENANT_ID as string | undefined)?.trim() ?? ''
+
+export const MICROSOFT_ACTIVO = Boolean(clientId && tenantId)
+export const ENTRA = { clientId, tenantId }
+
+/**
+ * Correos que siempre entran como administrador (para poder dar los primeros permisos).
+ * Se escriben separados por coma en VITE_ADMINISTRADORES.
+ */
+export const ADMINISTRADORES: string[] = ((import.meta.env.VITE_ADMINISTRADORES as string | undefined) ?? '')
+  .split(',')
+  .map((c) => c.trim().toLowerCase())
+  .filter(Boolean)
+=== C:\Users\racarrasco\OneDrive - UC CHRISTUS Chile\Escritorio\apoyo-espiritual\src\config\navegacion.ts ===
+import {
+  ChartColumn,
+  CirclePlus,
+  ClipboardList,
+  House,
+  Megaphone,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react'
+import type { Rol } from '@/types'
+
+export interface ItemMenu {
+  ruta: string
+  etiqueta: string
+  descripcion: string
+  icono: LucideIcon
+  /** Roles que ven esta opciÃ³n */
+  roles: Rol[]
+  /** Si aparece como tarjeta de atajo en la pÃ¡gina de inicio */
+  atajo: boolean
+}
+
+/**
+ * Ãšnica fuente de verdad del menÃº y de las rutas permitidas por rol.
+ * Para agregar una secciÃ³n: sÃºmala aquÃ­ y crea su ruta en App.tsx.
+ */
+export const menu: ItemMenu[] = [
+  {
+    ruta: '/',
+    etiqueta: 'Inicio',
+    descripcion: 'Resumen y accesos rÃ¡pidos.',
+    icono: House,
+    roles: ['solicitante', 'coordinador', 'administrador'],
+    atajo: false,
+  },
+  {
+    ruta: '/nueva-solicitud',
+    etiqueta: 'Nueva solicitud',
+    descripcion: 'Pide apoyo emocional o espiritual para un paciente, un familiar, para ti o para tu equipo.',
+    icono: CirclePlus,
+    roles: ['solicitante', 'coordinador', 'administrador'],
+    atajo: true,
+  },
+  {
+    ruta: '/mis-solicitudes',
+    etiqueta: 'Mis solicitudes',
+    descripcion: 'Revisa el estado y el historial de lo que has pedido.',
+    icono: ClipboardList,
+    roles: ['solicitante'],
+    atajo: true,
+  },
+  {
+    ruta: '/solicitudes',
+    etiqueta: 'Solicitudes',
+    descripcion: 'Revisa las solicitudes, cambia su estado y asigna responsables.',
+    icono: ClipboardList,
+    roles: ['coordinador', 'administrador'],
+    atajo: true,
+  },
+  {
+    ruta: '/estadisticas',
+    etiqueta: 'EstadÃ­sticas',
+    descripcion: 'Indicadores por centro, servicio, estado, tipo y mes.',
+    icono: ChartColumn,
+    roles: ['coordinador', 'administrador'],
+    atajo: true,
+  },
+  {
+    ruta: '/anuncios',
+    etiqueta: 'Anuncios',
+    descripcion: 'Crea y edita las tarjetas con fotos que ve el solicitante.',
+    icono: Megaphone,
+    roles: ['coordinador', 'administrador'],
+    atajo: true,
+  },
+  {
+    ruta: '/administracion',
+    etiqueta: 'AdministraciÃ³n',
+    descripcion: 'Centros, servicios, programas y usuarios.',
+    icono: Settings,
+    roles: ['administrador'],
+    atajo: true,
+  },
+]
+
+export const nombreDeRol: Record<Rol, string> = {
+  solicitante: 'Solicitante',
+  coordinador: 'Coordinador',
+  administrador: 'Administrador',
+}
+
+export const descripcionDeRol: Record<Rol, string> = {
+  solicitante: 'AquÃ­ puedes pedir apoyo emocional o espiritual para un paciente, un familiar, para ti o para tu equipo, y seguir el estado de tus solicitudes.',
+  coordinador:
+    'Revisas las solicitudes que llegan, cambias su estado y asignas a la persona responsable.',
+  administrador:
+    'Administras centros, servicios, programas y usuarios, y ves los indicadores globales.',
+}
+=== C:\Users\racarrasco\OneDrive - UC CHRISTUS Chile\Escritorio\apoyo-espiritual\src\config\programas.ts ===
+import paec from '@/assets/marca/paec.png'
+import pares from '@/assets/marca/pares.png'
+import type { Programa } from '@/types'
+
+export interface InfoPrograma {
+  sigla: Programa
+  nombre: string
+  /** Texto corto (cuadro de ayuda y tarjetas) */
+  descripcion: string
+  /** Puntos clave, tomados de la presentaciÃ³n oficial de HumanizaciÃ³n */
+  puntos: string[]
+  logo: string
+}
+
+export const programas: InfoPrograma[] = [
+  {
+    sigla: 'PAEC',
+    nombre: 'Programa de Apoyo Emocional para Colaboradores',
+    descripcion: 'Conversas con un psicÃ³logo/a, de forma gratuita y confidencial. Es para quienes trabajan en la red.',
+    puntos: [
+      'Te acompaÃ±a un psicÃ³logo/a',
+      'Es gratuito y confidencial',
+      'Tienes hasta 8 sesiones',
+      'Cada sesiÃ³n dura 30 minutos',
+      'Puedes elegir online o presencial',
+      'DerivaciÃ³n asistida si se requiere',
+    ],
+    logo: paec,
+  },
+  {
+    sigla: 'PARES',
+    nombre: 'Programa de Apoyo y Resiliencia para Eventos estresantes y de Seguridad graves',
+    descripcion: 'Colegas capacitados en Primeros Auxilios PsicolÃ³gicos te acompaÃ±an tras un evento estresante.',
+    puntos: [
+      'Te acompaÃ±an colegas de distintos estamentos: administrativos/as, TENS, enfermeros/as, mÃ©dicos y otros profesionales',
+      'EstÃ¡n capacitados en Primeros Auxilios PsicolÃ³gicos',
+      'Te escuchan frente a un evento estresante, con cuidado y sin juzgarte',
+    ],
+    logo: pares,
+  },
+]
+
+export const talleresGrupales = [
+  'Manejo de ansiedad',
+  'Autocuidado',
+  'Higiene del sueÃ±o',
+  'Duelo',
+  'GestiÃ³n emocional',
+  'Ejercicios prÃ¡cticos de relajaciÃ³n',
+  'ComunicaciÃ³n',
+  'JardÃ­n de flores / ReencontrÃ¡ndonos',
+]
