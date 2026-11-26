@@ -1,11 +1,10 @@
 import {
+  ClipboardList,
   ClipboardPlus,
   HandHeart,
   Inbox,
   Megaphone,
-  Pause,
   Phone,
-  Play,
   UserCheck,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -17,7 +16,6 @@ import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/context/AuthContext'
 import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
 import { cn } from '@/utils/cn'
-import { primerNombre } from '@/utils/formato'
 
 const ICONOS_PASOS = [ClipboardPlus, Inbox, UserCheck, Phone]
 
@@ -25,34 +23,30 @@ function ComoAvanza() {
   const { config } = useConfiguracionPortal()
   const pasos = config.pasosInicio
   const [paso, setPaso] = useState(0)
-  const [pausado, setPausado] = useState(false)
+  const [interactuado, setInteractuado] = useState(false)
 
   useEffect(() => {
-    if (pausado || pasos.length === 0) return
-    const t = setTimeout(() => setPaso((p) => (p + 1) % pasos.length), 3000)
+    if (interactuado || pasos.length === 0) return
+    const t = setTimeout(() => setPaso((p) => (p + 1) % pasos.length), 3500)
     return () => clearTimeout(t)
-  }, [pausado, paso, pasos.length])
+  }, [interactuado, paso, pasos.length])
 
   const pasoActual = pasos[paso] ?? pasos[0]
 
   return (
     <section
-      aria-label="Cómo avanzará tu solicitud"
+      aria-label="Cómo funciona el acompañamiento"
       className="rounded-3xl border border-linea bg-superficie p-5 shadow-sm"
     >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-4">
         <h2 className="fuente-cercana text-2xl font-bold text-uc-purple-texto">
           Cómo avanzará tu solicitud
         </h2>
-        <Button
-          variante="outline"
-          tamano="sm"
-          icono={pausado ? Play : Pause}
-          onClick={() => setPausado((p) => !p)}
-        >
-          {pausado ? 'Reanudar animación' : 'Pausar animación'}
-        </Button>
+        <p className="mt-0.5 text-xs text-tinta-3">
+          Selecciona cada etapa para revisar qué ocurre después de enviar tu formulario.
+        </p>
       </div>
+
       <ol className="grid gap-2 md:grid-cols-4">
         {pasos.map(({ titulo }, i) => {
           const Icono = ICONOS_PASOS[i % ICONOS_PASOS.length]
@@ -60,13 +54,16 @@ function ComoAvanza() {
             <li key={`${titulo}-${i}`}>
               <button
                 type="button"
-                onClick={() => setPaso(i)}
+                onClick={() => {
+                  setPaso(i)
+                  setInteractuado(true)
+                }}
                 aria-current={i === paso}
                 className={cn(
-                  'relative flex w-full cursor-pointer items-center gap-2.5 overflow-hidden rounded-2xl border p-3 text-left transition-all duration-500 md:flex-col md:text-center',
+                  'relative flex w-full cursor-pointer items-center gap-2.5 overflow-hidden rounded-2xl border p-3 text-left transition-all duration-300 md:flex-col md:text-center',
                   i === paso
-                    ? 'gradiente-marca border-transparent text-white'
-                    : 'border-linea bg-superficie-2 text-tinta-2',
+                    ? 'gradiente-marca border-transparent text-white shadow-xs'
+                    : 'border-linea bg-superficie-2 text-tinta-2 hover:border-uc-purple/40',
                 )}
               >
                 <span
@@ -80,7 +77,7 @@ function ComoAvanza() {
                 <span className="text-sm font-bold">
                   {i + 1}. {titulo}
                 </span>
-                {i === paso && !pausado && (
+                {i === paso && !interactuado && (
                   <span
                     key={paso}
                     className="barra-avance absolute inset-x-0 bottom-0 h-1 bg-white/70"
@@ -92,6 +89,7 @@ function ComoAvanza() {
           )
         })}
       </ol>
+
       {pasoActual && (
         <p
           className="mt-3 rounded-xl bg-uc-purple-light px-4 py-2.5 text-sm text-uc-purple-texto"
@@ -108,6 +106,8 @@ export function Inicio() {
   const { usuario } = useAuth()
   const { config } = useConfiguracionPortal()
   if (!usuario) return null
+
+  const esGestion = usuario.rol === 'coordinador' || usuario.rol === 'administrador'
 
   return (
     <div className="space-y-6">
@@ -129,36 +129,42 @@ export function Inicio() {
           aria-hidden
         />
         <div className="relative max-w-2xl">
-          <p className="mb-1 text-xs font-bold tracking-wider text-white/80 uppercase">
-            {config.nombreArea}
+          <p className="mb-1.5 text-xs font-bold tracking-wider text-white/85 uppercase">
+            {config.nombreArea} · Red de Salud UC CHRISTUS
           </p>
-          <h1 className="fuente-cercana text-4xl leading-tight font-bold md:text-5xl">
-            Hola, {primerNombre(usuario.nombre)}
+          <h1 className="fuente-cercana text-3xl leading-tight font-bold md:text-5xl">
+            Portal de Apoyo Emocional y Espiritual
           </h1>
-          <p className="mt-2 text-base text-white/90">{config.descripcionRoles[usuario.rol]}</p>
-          <div className="mt-5 flex flex-wrap gap-2.5">
-            <Link to="/nueva-solicitud">
-              <Button
-                variante="outline"
-                tamano="lg"
-                relieve
-                icono={HandHeart}
-                tabIndex={-1}
-                className="border-white !bg-white !text-uc-purple"
-              >
-                Pedir apoyo
-              </Button>
-            </Link>
-            <Link to="/#programas">
-              <Button
-                variante="ghost"
-                tamano="lg"
-                tabIndex={-1}
-                className="!text-white ring-1 ring-white/60 hover:!bg-white/15"
-              >
-                Conocer los programas
-              </Button>
-            </Link>
+          <p className="mt-3 text-base text-white/90">{config.descripcionRoles[usuario.rol]}</p>
+
+          <div className="mt-6">
+            {esGestion ? (
+              <Link to="/solicitudes">
+                <Button
+                  variante="outline"
+                  tamano="lg"
+                  relieve
+                  icono={ClipboardList}
+                  tabIndex={-1}
+                  className="border-white !bg-white !text-uc-purple"
+                >
+                  Gestionar solicitudes
+                </Button>
+              </Link>
+            ) : (
+              <Link to="/nueva-solicitud">
+                <Button
+                  variante="outline"
+                  tamano="lg"
+                  relieve
+                  icono={HandHeart}
+                  tabIndex={-1}
+                  className="border-white !bg-white !text-uc-purple"
+                >
+                  Solicitar acompañamiento
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -173,9 +179,11 @@ export function Inicio() {
         </div>
       )}
 
-      <div className="animar-aparecer">
-        <ComoAvanza />
-      </div>
+      {!esGestion && (
+        <div className="animar-aparecer">
+          <ComoAvanza />
+        </div>
+      )}
 
       <ProgramasDesplegables />
 

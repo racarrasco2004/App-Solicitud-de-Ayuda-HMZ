@@ -1,6 +1,6 @@
-import { Check, ChevronDown, ExternalLink, HandHeart, Sparkles } from 'lucide-react'
+import { Check, ChevronDown, ExternalLink, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import espiritualImg from '@/assets/marca/area-espiritual.png'
 import { Button } from '@/components/ui/Button'
 import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
@@ -70,9 +70,14 @@ export function ProgramasDesplegables() {
                 ))}
               </div>
             </div>
-            <a href={config.formularioPaecUrl} target="_blank" rel="noreferrer" className="self-start">
+            <a
+              href={config.formularioPaecUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="self-start"
+            >
               <Button variante="blue" relieve icono={ExternalLink} tabIndex={-1}>
-                Agendar mi atención
+                Agendar atención psicológica (agenda externa)
               </Button>
             </a>
           </>
@@ -90,11 +95,6 @@ export function ProgramasDesplegables() {
           <>
             <p className="text-sm font-semibold text-tinta">{pares.nombre}</p>
             <Lista puntos={pares.puntos} />
-            <Link to="/nueva-solicitud" className="self-start">
-              <Button relieve icono={HandHeart} tabIndex={-1}>
-                Pedir apoyo PARES
-              </Button>
-            </Link>
           </>
         ),
       })
@@ -110,11 +110,6 @@ export function ProgramasDesplegables() {
           <>
             <p className="text-sm text-tinta-2">{config.espiritual.descripcionInicio}</p>
             {config.espiritual.puntos.length > 0 && <Lista puntos={config.espiritual.puntos} />}
-            <Link to="/nueva-solicitud" className="self-start">
-              <Button relieve icono={HandHeart} tabIndex={-1}>
-                Pedir acompañamiento
-              </Button>
-            </Link>
           </>
         ),
       })
@@ -136,9 +131,14 @@ export function ProgramasDesplegables() {
       aria-label="Nuestros programas"
       className="scroll-mt-24 rounded-3xl border border-linea bg-superficie p-5 shadow-sm"
     >
-      <h2 className="fuente-cercana mb-2 text-2xl font-bold text-uc-purple-texto">
-        Nuestros programas
-      </h2>
+      <div className="mb-2">
+        <h2 className="fuente-cercana text-2xl font-bold text-uc-purple-texto">
+          Nuestros programas
+        </h2>
+        <p className="mt-0.5 text-xs text-tinta-3">
+          Conoce el alcance de cada línea de acompañamiento antes de ingresar tu solicitud.
+        </p>
+      </div>
       <ul className="divide-y divide-linea">
         {items.map((p) => {
           const activo = abierto === p.id
@@ -163,7 +163,7 @@ export function ProgramasDesplegables() {
                 </span>
                 <span className="flex-1 text-sm text-tinta-2">{p.resumen}</span>
                 <span className="hidden text-xs font-bold text-uc-purple-texto sm:inline">
-                  {activo ? 'Cerrar' : 'Ver más'}
+                  {activo ? 'Cerrar' : 'Ver detalle'}
                 </span>
                 <ChevronDown
                   size={20}
