@@ -3,6 +3,7 @@ import {
   Building2,
   Check,
   CheckCircle2,
+  ClipboardEdit,
   Clock,
   Download,
   Eye,
@@ -10,12 +11,14 @@ import {
   HelpCircle,
   Info,
   Mail,
+  Megaphone,
   Pencil,
   Plus,
   Power,
   RotateCcw,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
   Trash2,
   TriangleAlert,
   Upload,
@@ -24,15 +27,20 @@ import {
   X,
 } from 'lucide-react'
 import { useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { CampoLista, CampoTexto, CampoTextoLargo } from '@/components/ui/Campos'
 import { Modal } from '@/components/ui/Modal'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { nombreDeRol } from '@/config/navegacion'
+import { useAnuncios } from '@/context/AnunciosContext'
 import { useAuth } from '@/context/AuthContext'
 import { useCatalogos } from '@/context/CatalogosContext'
-import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
+import {
+  useConfiguracionPortal,
+  type ReglaEspiritualColaborador,
+} from '@/context/ConfiguracionPortalContext'
 import { CentrosYServicios } from '@/pages/CentrosYServicios'
 import type { Rol } from '@/types'
 import { cn } from '@/utils/cn'
@@ -40,7 +48,7 @@ import { normalizarCorreoInstitucional } from '@/utils/validaciones'
 
 const roles: Rol[] = ['solicitante', 'coordinador', 'administrador']
 
-type TabAdmin = 'centros' | 'equipo' | 'contenidos' | 'reglas'
+type TabAdmin = 'centros' | 'equipo' | 'contenidos' | 'formulario' | 'reglas'
 
 function Tarjeta({
   titulo,
@@ -89,25 +97,31 @@ function GuiaRapidaModal({ abierto, onCerrar }: { abierto: boolean; onCerrar: ()
       num: '1',
       titulo: 'Centros y servicios clínicos',
       detalle:
-        'Sirve para agregar o quitar hospitales, centros médicos y unidades clínicas (por ejemplo, MQ 4A o Urgencia). Todo lo que agregues aquí aparecerá de inmediato en el formulario cuando alguien pida apoyo.',
+        'Agrega o quita hospitales, centros médicos y unidades clínicas (ej. MQ 4A, Urgencia). Aparecen de inmediato en el formulario de solicitud.',
     },
     {
       num: '2',
       titulo: 'Equipo y permisos',
       detalle:
-        'Tiene dos listas: "Responsables" (personas del equipo a quienes se les asignan casos) y "Usuarios con permisos" (quién puede entrar a gestionar solicitudes o editar esta pantalla). Al agregar un responsable, puedes darle acceso de Coordinador automáticamente.',
+        'Gestiona quiénes reciben casos asignados ("Responsables") y quiénes entran a gestionar o configurar el portal ("Usuarios con permisos").',
     },
     {
       num: '3',
-      titulo: 'Programas y textos',
+      titulo: 'Programas y contenidos',
       detalle:
-        'Permite actualizar la información de PAEC y PARES (con vista previa en vivo), los talleres grupales, las opciones de religión y los 4 pasos explicativos de la página de Inicio.',
+        'Edita PAEC, PARES y Asistencia Espiritual con vista previa en vivo, además de talleres grupales, religiones, tipos de apoyo espiritual y los 4 pasos de Inicio.',
     },
     {
       num: '4',
-      titulo: 'Reglas y respaldo',
+      titulo: 'Formulario de solicitud',
       detalle:
-        'Define cuántas horas puede estar una solicitud sin atender antes de marcarse en alerta, el aviso de horario y el enlace de agenda PAEC. Además, permite descargar una copia de seguridad (.json) para guardarla en OneDrive o restaurarla en otro computador.',
+        'Personaliza las tarjetas de solicitantes, activa o pausa programas en el formulario, define cuándo aparece el apoyo espiritual en colaboradores y edita los textos legales y de confirmación.',
+    },
+    {
+      num: '5',
+      titulo: 'Identidad, reglas y respaldo',
+      detalle:
+        'Configura el nombre del área, un anuncio destacado en portada, horas de alerta, mensajes de escalamiento y descarga o restaura copias de seguridad (.json).',
     },
   ]
 
@@ -126,11 +140,10 @@ function GuiaRapidaModal({ abierto, onCerrar }: { abierto: boolean; onCerrar: ()
     >
       <div className="space-y-3 text-sm text-tinta-2">
         <p>
-          Desde esta pantalla puedes mantener actualizado todo el portal{' '}
-          <strong className="text-tinta">sin necesidad de programar</strong>. Todos los cambios se
-          guardan automáticamente al presionar los botones de guardar.
+          Desde esta pantalla puedes controlar <strong className="text-tinta">todo el contenido y reglas del portal</strong>{' '}
+          sin necesidad de programar. Todos los cambios se guardan al presionar los botones de guardar.
         </p>
-        <div className="space-y-2.5 pt-1">
+        <div className="space-y-2 pt-1">
           {pasosGuia.map((p) => (
             <div key={p.num} className="rounded-xl border border-linea bg-fondo/80 p-3">
               <p className="font-bold text-tinta">
@@ -475,11 +488,7 @@ function Usuarios() {
         </table>
       </div>
 
-      <form
-        onSubmit={enviar}
-        className="space-y-2.5 rounded-xl bg-fondo/70 p-3.5"
-        noValidate
-      >
+      <form onSubmit={enviar} className="space-y-2.5 rounded-xl bg-fondo/70 p-3.5" noValidate>
         <p className="text-xs font-bold text-tinta">Otorgar permisos a otra persona</p>
         <div className="grid items-start gap-2.5 sm:grid-cols-[1fr_1fr_170px_auto]">
           <CampoTexto
@@ -531,21 +540,33 @@ function EditorContenidos() {
   const {
     config,
     actualizarPrograma,
+    actualizarEspiritual,
     actualizarTalleres,
     actualizarPasosInicio,
     actualizarReligiones,
     actualizarTiposApoyoEspiritual,
   } = useConfiguracionPortal()
 
-  const [progSeleccionado, setProgSeleccionado] = useState<'PAEC' | 'PARES'>('PAEC')
+  const [pilarSeleccionado, setPilarSeleccionado] = useState<'PAEC' | 'PARES' | 'ESPIRITUAL'>('PAEC')
   const programaActual =
-    config.programas.find((p) => p.sigla === progSeleccionado) ?? config.programas[0]
+    config.programas.find((p) => p.sigla === (pilarSeleccionado === 'ESPIRITUAL' ? 'PAEC' : pilarSeleccionado)) ??
+    config.programas[0]
 
+  // Estado PAEC / PARES
   const [nombreProg, setNombreProg] = useState(programaActual.nombre)
   const [descProg, setDescProg] = useState(programaActual.descripcion)
   const [puntosProg, setPuntosProg] = useState(programaActual.puntos.join('\n'))
-  const [guardadoProg, setGuardadoProg] = useState('')
 
+  // Estado Asistencia Espiritual
+  const [espNombre, setEspNombre] = useState(config.espiritual.nombre)
+  const [espResumen, setEspResumen] = useState(config.espiritual.resumenInicio)
+  const [espDescInicio, setEspDescInicio] = useState(config.espiritual.descripcionInicio)
+  const [espExplicacionForm, setEspExplicacionForm] = useState(config.espiritual.explicacionFormulario)
+  const [espActivo, setEspActivo] = useState(config.espiritual.activo)
+
+  const [guardadoPilar, setGuardadoPilar] = useState('')
+
+  // Listas y pasos
   const [talleresTexto, setTalleresTexto] = useState(config.talleresGrupales.join('\n'))
   const [religionesTexto, setReligionesTexto] = useState(config.religiones.join('\n'))
   const [apoyoEspiritualTexto, setApoyoEspiritualTexto] = useState(
@@ -554,30 +575,58 @@ function EditorContenidos() {
   const [pasos, setPasos] = useState(config.pasosInicio)
   const [guardadoListas, setGuardadoListas] = useState('')
 
-  const cambiarTabPrograma = (sigla: 'PAEC' | 'PARES') => {
-    setProgSeleccionado(sigla)
-    const encontrado = config.programas.find((p) => p.sigla === sigla)
-    if (encontrado) {
-      setNombreProg(encontrado.nombre)
-      setDescProg(encontrado.descripcion)
-      setPuntosProg(encontrado.puntos.join('\n'))
-      setGuardadoProg('')
+  const cambiarTabPilar = (clave: 'PAEC' | 'PARES' | 'ESPIRITUAL') => {
+    setPilarSeleccionado(clave)
+    setGuardadoPilar('')
+    if (clave === 'PAEC' || clave === 'PARES') {
+      const encontrado = config.programas.find((p) => p.sigla === clave)
+      if (encontrado) {
+        setNombreProg(encontrado.nombre)
+        setDescProg(encontrado.descripcion)
+        setPuntosProg(encontrado.puntos.join('\n'))
+      }
+    } else {
+      setEspNombre(config.espiritual.nombre)
+      setEspResumen(config.espiritual.resumenInicio)
+      setEspDescInicio(config.espiritual.descripcionInicio)
+      setEspExplicacionForm(config.espiritual.explicacionFormulario)
+      setEspActivo(config.espiritual.activo)
     }
   }
 
-  const puntosVistaPrevia = useMemo(
-    () => puntosProg.split(/\r?\n/).map((p) => p.trim()).filter(Boolean),
-    [puntosProg],
-  )
+  const puntosVistaPrevia = useMemo(() => {
+    if (pilarSeleccionado === 'ESPIRITUAL') {
+      return apoyoEspiritualTexto
+        .split(/\r?\n/)
+        .map((p) => p.trim())
+        .filter(Boolean)
+    }
+    return puntosProg
+      .split(/\r?\n/)
+      .map((p) => p.trim())
+      .filter(Boolean)
+  }, [pilarSeleccionado, puntosProg, apoyoEspiritualTexto])
 
-  const guardarPrograma = (e: FormEvent) => {
+  const guardarPilar = (e: FormEvent) => {
     e.preventDefault()
-    actualizarPrograma(progSeleccionado, {
-      nombre: nombreProg,
-      descripcion: descProg,
-      puntos: puntosProg.split(/\r?\n/),
-    })
-    setGuardadoProg(`Cambios en ${progSeleccionado} guardados correctamente.`)
+    if (pilarSeleccionado === 'PAEC' || pilarSeleccionado === 'PARES') {
+      actualizarPrograma(pilarSeleccionado, {
+        nombre: nombreProg,
+        descripcion: descProg,
+        puntos: puntosProg.split(/\r?\n/),
+      })
+      setGuardadoPilar(`Cambios en ${pilarSeleccionado} guardados correctamente.`)
+    } else {
+      actualizarEspiritual({
+        nombre: espNombre,
+        resumenInicio: espResumen,
+        descripcionInicio: espDescInicio,
+        explicacionFormulario: espExplicacionForm,
+        puntos: apoyoEspiritualTexto.split(/\r?\n/),
+        activo: espActivo,
+      })
+      setGuardadoPilar('Cambios en Asistencia Espiritual guardados correctamente.')
+    }
   }
 
   const guardarListasYPasos = (e: FormEvent) => {
@@ -592,76 +641,137 @@ function EditorContenidos() {
   return (
     <div className="space-y-4">
       <BannerContexto
-        titulo="Personaliza la información visible para colaboradores y pacientes"
-        descripcion="Aquí puedes actualizar los textos explicativos de PAEC y PARES, los tipos de apoyo espiritual, los talleres disponibles y los pasos de bienvenida sin modificar código."
+        titulo="Personaliza programas, asistencia espiritual y listas del portal"
+        descripcion="Edita los textos de PAEC, PARES y Asistencia Espiritual con vista previa en vivo, además de los talleres, religiones, tipos de apoyo espiritual y pasos de bienvenida."
       />
 
       <Tarjeta
         ancha
-        titulo="Programas de apoyo (PAEC y PARES)"
-        nota="Selecciona un programa, edita sus textos a la izquierda y revisa a la derecha cómo se verá."
+        titulo="Programas y áreas de acompañamiento"
+        nota="Elige una pestaña, edita sus textos a la izquierda y revisa a la derecha cómo se verá en el portal."
         dondeAparece="Inicio y Formulario de Solicitud"
       >
-        <div className="mb-4 flex gap-2">
-          {config.programas.map((p) => (
-            <button
-              key={p.sigla}
-              type="button"
-              onClick={() => cambiarTabPrograma(p.sigla)}
-              className={cn(
-                'cursor-pointer rounded-xl border px-3.5 py-2 text-xs font-bold transition-all',
-                progSeleccionado === p.sigla
-                  ? 'border-uc-purple bg-uc-purple text-white shadow-xs'
-                  : 'border-linea bg-fondo text-tinta-2 hover:text-tinta',
-              )}
-            >
-              Editar programa {p.sigla}
-            </button>
-          ))}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {(['PAEC', 'PARES', 'ESPIRITUAL'] as const).map((clave) => {
+            const etiqueta =
+              clave === 'ESPIRITUAL' ? 'Asistencia Espiritual' : `Programa ${clave}`
+            return (
+              <button
+                key={clave}
+                type="button"
+                onClick={() => cambiarTabPilar(clave)}
+                className={cn(
+                  'cursor-pointer rounded-xl border px-3.5 py-2 text-xs font-bold transition-all',
+                  pilarSeleccionado === clave
+                    ? 'border-uc-purple bg-uc-purple text-white shadow-xs'
+                    : 'border-linea bg-fondo text-tinta-2 hover:text-tinta',
+                )}
+              >
+                {etiqueta}
+              </button>
+            )
+          })}
         </div>
 
         <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-          <form onSubmit={guardarPrograma} className="space-y-3" noValidate>
-            <CampoTexto
-              etiqueta="Nombre completo del programa"
-              value={nombreProg}
-              onChange={(e) => {
-                setNombreProg(e.target.value)
-                if (guardadoProg) setGuardadoProg('')
-              }}
-            />
-            <CampoTextoLargo
-              etiqueta="Resumen breve (aparece bajo el título)"
-              value={descProg}
-              onChange={(e) => {
-                setDescProg(e.target.value)
-                if (guardadoProg) setGuardadoProg('')
-              }}
-              className="[&_textarea]:min-h-16"
-            />
-            <CampoTextoLargo
-              etiqueta="Características o beneficios (escribe uno por línea)"
-              value={puntosProg}
-              onChange={(e) => {
-                setPuntosProg(e.target.value)
-                if (guardadoProg) setGuardadoProg('')
-              }}
-              className="[&_textarea]:min-h-32"
-            />
+          <form onSubmit={guardarPilar} className="space-y-3" noValidate>
+            {pilarSeleccionado !== 'ESPIRITUAL' ? (
+              <>
+                <CampoTexto
+                  etiqueta="Nombre completo del programa"
+                  value={nombreProg}
+                  onChange={(e) => {
+                    setNombreProg(e.target.value)
+                    if (guardadoPilar) setGuardadoPilar('')
+                  }}
+                />
+                <CampoTextoLargo
+                  etiqueta="Resumen breve (aparece bajo el título)"
+                  value={descProg}
+                  onChange={(e) => {
+                    setDescProg(e.target.value)
+                    if (guardadoPilar) setGuardadoPilar('')
+                  }}
+                  className="[&_textarea]:min-h-16"
+                />
+                <CampoTextoLargo
+                  etiqueta="Características o beneficios (escribe uno por línea)"
+                  value={puntosProg}
+                  onChange={(e) => {
+                    setPuntosProg(e.target.value)
+                    if (guardadoPilar) setGuardadoPilar('')
+                  }}
+                  className="[&_textarea]:min-h-32"
+                />
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between rounded-xl border border-linea bg-fondo/60 px-3 py-2">
+                  <span className="text-xs font-bold text-tinta">
+                    Mostrar en el acordeón «Nuestros programas» de Inicio
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={espActivo}
+                    onChange={(e) => {
+                      setEspActivo(e.target.checked)
+                      if (guardadoPilar) setGuardadoPilar('')
+                    }}
+                    className="h-4 w-4 accent-uc-purple"
+                  />
+                </div>
+                <CampoTexto
+                  etiqueta="Nombre del área"
+                  value={espNombre}
+                  onChange={(e) => {
+                    setEspNombre(e.target.value)
+                    if (guardadoPilar) setGuardadoPilar('')
+                  }}
+                />
+                <CampoTexto
+                  etiqueta="Bajada corta en fila cerrada (Inicio)"
+                  value={espResumen}
+                  onChange={(e) => {
+                    setEspResumen(e.target.value)
+                    if (guardadoPilar) setGuardadoPilar('')
+                  }}
+                />
+                <CampoTextoLargo
+                  etiqueta="Descripción desplegada en Inicio"
+                  value={espDescInicio}
+                  onChange={(e) => {
+                    setEspDescInicio(e.target.value)
+                    if (guardadoPilar) setGuardadoPilar('')
+                  }}
+                  className="[&_textarea]:min-h-16"
+                />
+                <CampoTextoLargo
+                  etiqueta="Texto explicativo «¿Qué es el apoyo espiritual?» (Nueva Solicitud)"
+                  value={espExplicacionForm}
+                  onChange={(e) => {
+                    setEspExplicacionForm(e.target.value)
+                    if (guardadoPilar) setGuardadoPilar('')
+                  }}
+                  className="[&_textarea]:min-h-20"
+                />
+              </>
+            )}
+
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-              {guardadoProg ? (
+              {guardadoPilar ? (
                 <span className="flex items-center gap-1.5 text-xs font-medium text-uc-green-texto">
-                  <CheckCircle2 size={14} /> {guardadoProg}
+                  <CheckCircle2 size={14} /> {guardadoPilar}
                 </span>
               ) : (
                 <span />
               )}
               <Button type="submit" relieve icono={Check}>
-                Guardar {progSeleccionado}
+                Guardar {pilarSeleccionado === 'ESPIRITUAL' ? 'Asistencia Espiritual' : pilarSeleccionado}
               </Button>
             </div>
           </form>
 
+          {/* Vista previa en tiempo real */}
           <div className="flex flex-col justify-between rounded-2xl border border-dashed border-uc-purple/40 bg-fondo/70 p-4">
             <div>
               <div className="mb-2 flex items-center gap-1.5 text-[0.6875rem] font-bold tracking-wide text-uc-purple-texto uppercase">
@@ -669,13 +779,17 @@ function EditorContenidos() {
               </div>
               <div className="rounded-xl border border-linea bg-superficie p-3.5 shadow-xs">
                 <div className="flex items-center gap-2">
-                  <Badge tono="purple">{progSeleccionado}</Badge>
+                  <Badge tono="purple">
+                    {pilarSeleccionado === 'ESPIRITUAL' ? 'Espiritual' : pilarSeleccionado}
+                  </Badge>
                   <h3 className="text-sm font-bold text-tinta">
-                    {nombreProg.trim() || 'Nombre del programa'}
+                    {(pilarSeleccionado === 'ESPIRITUAL' ? espNombre : nombreProg).trim() ||
+                      'Nombre del programa'}
                   </h3>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-tinta-2">
-                  {descProg.trim() || 'Descripción breve del programa...'}
+                  {(pilarSeleccionado === 'ESPIRITUAL' ? espDescInicio : descProg).trim() ||
+                    'Descripción breve...'}
                 </p>
                 {puntosVistaPrevia.length > 0 && (
                   <ul className="mt-2.5 list-disc space-y-1 pl-4 text-xs text-tinta-2">
@@ -703,7 +817,7 @@ function EditorContenidos() {
             <div className="rounded-xl border border-linea bg-fondo/50 p-3">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <span className="text-xs font-bold text-tinta">Tipos de apoyo espiritual</span>
-                <Badge tono="blue">Nueva Solicitud</Badge>
+                <Badge tono="blue">Inicio y Solicitud</Badge>
               </div>
               <CampoTextoLargo
                 etiqueta="Escribe una opción por línea"
@@ -802,13 +916,273 @@ function EditorContenidos() {
   )
 }
 
+function EditorFormulario() {
+  const { config, actualizarFlujoSolicitud } = useConfiguracionPortal()
+
+  const [tiposSolicitante, setTiposSolicitante] = useState(config.tiposSolicitante)
+  const [opcionesApoyo, setOpcionesApoyo] = useState(config.opcionesApoyo)
+  const [reglaEspiritual, setReglaEspiritual] = useState<ReglaEspiritualColaborador>(
+    config.reglaEspiritualColaborador,
+  )
+  const [consentPersonal, setConsentPersonal] = useState(config.consentimientoPersonal)
+  const [consentColab, setConsentColab] = useState(config.consentimientoColaborador)
+  const [mensajeConfirm, setMensajeConfirm] = useState(config.mensajeConfirmacion)
+  const [guardado, setGuardado] = useState('')
+
+  const guardar = (e: FormEvent) => {
+    e.preventDefault()
+    actualizarFlujoSolicitud({
+      tiposSolicitante,
+      opcionesApoyo,
+      reglaEspiritualColaborador: reglaEspiritual,
+      consentimientoPersonal: consentPersonal,
+      consentimientoColaborador: consentColab,
+      mensajeConfirmacion: mensajeConfirm,
+    })
+    setGuardado('Configuración del formulario guardada correctamente.')
+  }
+
+  return (
+    <form onSubmit={guardar} className="space-y-4" noValidate>
+      <BannerContexto
+        titulo="Controla las preguntas, opciones y textos del formulario Nueva Solicitud"
+        descripcion="Personaliza las tarjetas que eligen los usuarios, activa o pausa opciones temporalmente y ajusta los textos legales y de confirmación."
+      />
+
+      <Tarjeta
+        ancha
+        titulo="1. Tarjetas de «¿Para quién pides apoyo?»"
+        nota="Edita el título y descripción de cada perfil o desactívalo temporalmente si no está disponible."
+        dondeAparece="Paso 2 de Nueva Solicitud"
+      >
+        <div className="grid gap-3 sm:grid-cols-2">
+          {tiposSolicitante.map((item, idx) => (
+            <div
+              key={item.valor}
+              className={cn(
+                'space-y-2 rounded-xl border p-3.5 transition-opacity',
+                item.activo ? 'border-linea bg-fondo/60' : 'border-dashed border-linea bg-fondo/30 opacity-70',
+              )}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <Badge tono={item.activo ? 'purple' : 'muted'}>{item.valor}</Badge>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-tinta-2">
+                  <input
+                    type="checkbox"
+                    checked={item.activo}
+                    onChange={(e) => {
+                      setTiposSolicitante((prev) =>
+                        prev.map((t, i) => (i === idx ? { ...t, activo: e.target.checked } : t)),
+                      )
+                      if (guardado) setGuardado('')
+                    }}
+                    className="h-4 w-4 accent-uc-purple"
+                  />
+                  Visible
+                </label>
+              </div>
+              <CampoTexto
+                etiqueta="Título de la tarjeta"
+                value={item.titulo}
+                onChange={(e) => {
+                  setTiposSolicitante((prev) =>
+                    prev.map((t, i) => (i === idx ? { ...t, titulo: e.target.value } : t)),
+                  )
+                  if (guardado) setGuardado('')
+                }}
+              />
+              <CampoTexto
+                etiqueta="Texto explicativo"
+                value={item.texto}
+                onChange={(e) => {
+                  setTiposSolicitante((prev) =>
+                    prev.map((t, i) => (i === idx ? { ...t, texto: e.target.value } : t)),
+                  )
+                  if (guardado) setGuardado('')
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </Tarjeta>
+
+      <Tarjeta
+        ancha
+        titulo="2. Opciones de apoyo para Colaboradores y Equipos"
+        nota="Define las tarjetas de PAEC, PARES y UIC y cuándo ofrecer acompañamiento espiritual opcional."
+        dondeAparece="Paso 3 y Contacto en Nueva Solicitud"
+      >
+        <div className="grid gap-3 md:grid-cols-3">
+          {opcionesApoyo.map((opc, idx) => (
+            <div
+              key={opc.clave}
+              className={cn(
+                'space-y-2 rounded-xl border p-3.5 transition-opacity',
+                opc.activo ? 'border-linea bg-fondo/60' : 'border-dashed border-linea bg-fondo/30 opacity-70',
+              )}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <Badge tono={opc.activo ? 'blue' : 'muted'}>{opc.clave}</Badge>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-tinta-2">
+                  <input
+                    type="checkbox"
+                    checked={opc.activo}
+                    onChange={(e) => {
+                      setOpcionesApoyo((prev) =>
+                        prev.map((o, i) => (i === idx ? { ...o, activo: e.target.checked } : o)),
+                      )
+                      if (guardado) setGuardado('')
+                    }}
+                    className="h-4 w-4 accent-uc-purple"
+                  />
+                  Visible
+                </label>
+              </div>
+              <CampoTexto
+                etiqueta="Título"
+                value={opc.titulo}
+                onChange={(e) => {
+                  setOpcionesApoyo((prev) =>
+                    prev.map((o, i) => (i === idx ? { ...o, titulo: e.target.value } : o)),
+                  )
+                  if (guardado) setGuardado('')
+                }}
+              />
+              <CampoTextoLargo
+                etiqueta="Descripción corta"
+                value={opc.texto}
+                onChange={(e) => {
+                  setOpcionesApoyo((prev) =>
+                    prev.map((o, i) => (i === idx ? { ...o, texto: e.target.value } : o)),
+                  )
+                  if (guardado) setGuardado('')
+                }}
+                className="[&_textarea]:min-h-16"
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-uc-purple/25 bg-fondo/70 p-3.5">
+          <p className="mb-2 flex items-center gap-1.5 text-xs font-bold text-uc-purple-texto">
+            <Sparkles size={14} /> Regla del bloque «¿Deseas apoyo espiritual? (opcional)»
+          </p>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {[
+              {
+                val: 'solo-pares' as const,
+                titulo: 'Solo en solicitudes PARES',
+                desc: 'Aparece únicamente cuando el colaborador o equipo elige PARES.',
+              },
+              {
+                val: 'todos-colaboradores' as const,
+                titulo: 'En todos los colaboradores/equipos',
+                desc: 'Aparece en cualquier solicitud de colaborador o equipo que se guarde.',
+              },
+              {
+                val: 'oculto' as const,
+                titulo: 'Oculto para colaboradores',
+                desc: 'Solo se solicita apoyo espiritual para pacientes y familiares.',
+              },
+            ].map((op) => (
+              <button
+                key={op.val}
+                type="button"
+                onClick={() => {
+                  setReglaEspiritual(op.val)
+                  if (guardado) setGuardado('')
+                }}
+                className={cn(
+                  'cursor-pointer rounded-xl border-2 p-2.5 text-left transition-all',
+                  reglaEspiritual === op.val
+                    ? 'border-uc-purple bg-uc-purple-light text-uc-purple-texto'
+                    : 'border-linea bg-superficie text-tinta hover:border-uc-purple/40',
+                )}
+              >
+                <p className="text-xs font-bold">{op.titulo}</p>
+                <p className="mt-0.5 text-[0.7rem] text-tinta-2">{op.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </Tarjeta>
+
+      <Tarjeta
+        ancha
+        titulo="3. Textos de autorización y mensaje final de envío"
+        nota="Frases legales y de agradecimiento que lee el usuario antes y después de enviar su solicitud."
+        dondeAparece="Paso final y pantalla de éxito"
+      >
+        <div className="space-y-3">
+          <CampoTextoLargo
+            etiqueta="Casilla de autorización (para Paciente o Familiar)"
+            value={consentPersonal}
+            onChange={(e) => {
+              setConsentPersonal(e.target.value)
+              if (guardado) setGuardado('')
+            }}
+            className="[&_textarea]:min-h-16"
+          />
+          <CampoTextoLargo
+            etiqueta="Casilla de autorización (para Colaborador o Equipo)"
+            value={consentColab}
+            onChange={(e) => {
+              setConsentColab(e.target.value)
+              if (guardado) setGuardado('')
+            }}
+            className="[&_textarea]:min-h-16"
+          />
+          <CampoTextoLargo
+            etiqueta="Mensaje de confirmación después de enviar"
+            value={mensajeConfirm}
+            onChange={(e) => {
+              setMensajeConfirm(e.target.value)
+              if (guardado) setGuardado('')
+            }}
+            className="[&_textarea]:min-h-16"
+          />
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+          {guardado ? (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-uc-green-texto">
+              <CheckCircle2 size={14} /> {guardado}
+            </span>
+          ) : (
+            <span />
+          )}
+          <Button type="submit" relieve icono={Check}>
+            Guardar ajustes del formulario
+          </Button>
+        </div>
+      </Tarjeta>
+    </form>
+  )
+}
+
 function ReglasYRespaldo() {
-  const { config, actualizarReglas, restaurarConfiguracion } = useConfiguracionPortal()
+  const { config, actualizarReglas, actualizarIdentidad, restaurarConfiguracion } =
+    useConfiguracionPortal()
+  const { anuncios } = useAnuncios()
+
+  // Identidad y portada
+  const [nombreArea, setNombreArea] = useState(config.nombreArea)
+  const [avisoPortada, setAvisoPortada] = useState(config.avisoPortada)
+  const [contactoSoporte, setContactoSoporte] = useState(config.contactoSoporte)
+  const [descSolicitante, setDescSolicitante] = useState(config.descripcionRoles.solicitante)
+  const [descCoordinador, setDescCoordinador] = useState(config.descripcionRoles.coordinador)
+  const [descAdministrador, setDescAdministrador] = useState(config.descripcionRoles.administrador)
+  const [mensajeIdentidad, setMensajeIdentidad] = useState('')
+
+  // Reglas y alertas
   const [horas, setHoras] = useState(String(config.horasEscalamiento))
+  const [mensajeEscalamiento, setMensajeEscalamiento] = useState(config.mensajeEscalamiento)
   const [avisoHorario, setAvisoHorario] = useState(config.avisoHorario)
   const [urlPaec, setUrlPaec] = useState(config.formularioPaecUrl)
   const [textoUic, setTextoUic] = useState(config.textoUic)
   const [mensajeReglas, setMensajeReglas] = useState('')
+
+  // Respaldos
   const [mensajeRespaldo, setMensajeRespaldo] = useState('')
   const [errorRespaldo, setErrorRespaldo] = useState('')
   const [modalReset, setModalReset] = useState(false)
@@ -821,20 +1195,36 @@ function ReglasYRespaldo() {
 
   const horasNum = Math.max(1, Number(horas) || 24)
 
+  const guardarIdentidad = (e: FormEvent) => {
+    e.preventDefault()
+    actualizarIdentidad({
+      nombreArea,
+      avisoPortada,
+      contactoSoporte,
+      descripcionRoles: {
+        solicitante: descSolicitante,
+        coordinador: descCoordinador,
+        administrador: descAdministrador,
+      },
+    })
+    setMensajeIdentidad('Identidad, portada y textos de bienvenida guardados.')
+  }
+
   const guardarReglas = (e: FormEvent) => {
     e.preventDefault()
     actualizarReglas({
       horasEscalamiento: horasNum,
+      mensajeEscalamiento,
       avisoHorario,
       formularioPaecUrl: urlPaec,
       textoUic,
     })
-    setMensajeReglas('Reglas operativas y avisos guardados correctamente.')
+    setMensajeReglas('Reglas operativas y alertas guardadas correctamente.')
   }
 
   const exportarRespaldoTotal = () => {
     const respaldo = {
-      version: 1,
+      version: 2,
       exportadoEn: new Date().toISOString(),
       datos: {
         centros: localStorage.getItem('portal-apoyo:centros:v3'),
@@ -906,14 +1296,97 @@ function ReglasYRespaldo() {
   return (
     <div className="space-y-4">
       <BannerContexto
-        titulo="Tiempos de alerta, avisos institucionales y copias de seguridad"
-        descripcion="Configura cuándo se alerta una solicitud sin responder, edita los avisos de horario y descarga copias de seguridad para proteger la información del equipo."
+        titulo="Identidad institucional, tiempos de alerta y copias de seguridad"
+        descripcion="Configura el nombre del área, un anuncio destacado en portada, las horas de alerta de escalamiento y descarga copias de seguridad del portal."
       />
 
       <Tarjeta
         ancha
-        titulo="Tiempos de alerta y avisos del portal"
-        nota="Ajusta las reglas de atención sin tocar código."
+        titulo="1. Portada, identidad institucional y contacto"
+        nota="Personaliza el nombre del área, un banner opcional en Inicio y la bajada de bienvenida de cada rol."
+        dondeAparece="Página de Inicio y Solicitudes"
+      >
+        <form onSubmit={guardarIdentidad} className="space-y-3" noValidate>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <CampoTexto
+              etiqueta="Nombre institucional del área"
+              value={nombreArea}
+              onChange={(e) => {
+                setNombreArea(e.target.value)
+                if (mensajeIdentidad) setMensajeIdentidad('')
+              }}
+            />
+            <CampoTexto
+              etiqueta="Dato de contacto o mesa de ayuda"
+              placeholder="Ej. Anexo 1234 · humanizacion@ucchristus.cl"
+              value={contactoSoporte}
+              onChange={(e) => {
+                setContactoSoporte(e.target.value)
+                if (mensajeIdentidad) setMensajeIdentidad('')
+              }}
+            />
+          </div>
+
+          <CampoTextoLargo
+            etiqueta="Aviso destacado en la portada de Inicio (déjalo vacío si no deseas mostrar ninguno)"
+            placeholder="Ej. Esta semana realizaremos pausas activas en el Hospital Clínico de 11:00 a 13:00 hrs."
+            value={avisoPortada}
+            onChange={(e) => {
+              setAvisoPortada(e.target.value)
+              if (mensajeIdentidad) setMensajeIdentidad('')
+            }}
+            className="[&_textarea]:min-h-14"
+          />
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <CampoTextoLargo
+              etiqueta="Bajada bienvenida · Solicitante"
+              value={descSolicitante}
+              onChange={(e) => {
+                setDescSolicitante(e.target.value)
+                if (mensajeIdentidad) setMensajeIdentidad('')
+              }}
+              className="[&_textarea]:min-h-20"
+            />
+            <CampoTextoLargo
+              etiqueta="Bajada bienvenida · Coordinador"
+              value={descCoordinador}
+              onChange={(e) => {
+                setDescCoordinador(e.target.value)
+                if (mensajeIdentidad) setMensajeIdentidad('')
+              }}
+              className="[&_textarea]:min-h-20"
+            />
+            <CampoTextoLargo
+              etiqueta="Bajada bienvenida · Administrador"
+              value={descAdministrador}
+              onChange={(e) => {
+                setDescAdministrador(e.target.value)
+                if (mensajeIdentidad) setMensajeIdentidad('')
+              }}
+              className="[&_textarea]:min-h-20"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+            {mensajeIdentidad ? (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-uc-green-texto">
+                <CheckCircle2 size={14} /> {mensajeIdentidad}
+              </span>
+            ) : (
+              <span />
+            )}
+            <Button type="submit" relieve icono={Check}>
+              Guardar identidad y portada
+            </Button>
+          </div>
+        </form>
+      </Tarjeta>
+
+      <Tarjeta
+        ancha
+        titulo="2. Tiempos de alerta y avisos del portal"
+        nota="Ajusta las reglas de atención y escalamiento sin tocar código."
       >
         <form onSubmit={guardarReglas} className="space-y-4" noValidate>
           <div className="rounded-xl border border-linea bg-fondo/60 p-3.5">
@@ -936,11 +1409,21 @@ function ReglasYRespaldo() {
                 <p className="mt-1">
                   Si una solicitud queda en estado <strong>Pendiente</strong> por más de{' '}
                   <strong>{horasNum} horas</strong>, el sistema la destacará como{' '}
-                  <strong>«Sin atender»</strong> en Solicitudes y Estadísticas.
+                  <strong>«Sin atender»</strong> en Solicitudes, Detalle y Estadísticas.
                 </p>
               </div>
             </div>
           </div>
+
+          <CampoTextoLargo
+            etiqueta="Mensaje de alerta al superar las horas sin atender"
+            value={mensajeEscalamiento}
+            onChange={(e) => {
+              setMensajeEscalamiento(e.target.value)
+              if (mensajeReglas) setMensajeReglas('')
+            }}
+            className="[&_textarea]:min-h-14"
+          />
 
           <CampoTexto
             etiqueta="Enlace de agenda online PAEC (Medilink)"
@@ -952,7 +1435,7 @@ function ReglasYRespaldo() {
             }}
           />
 
-<CampoTextoLargo
+          <CampoTextoLargo
             etiqueta="Aviso de horario de atención (visible al crear solicitud)"
             value={avisoHorario}
             onChange={(e) => {
@@ -999,9 +1482,30 @@ function ReglasYRespaldo() {
 
       <Tarjeta
         ancha
-        titulo="Copia de seguridad y traslado a otro computador"
-        nota="Guarda una copia de todos tus centros, servicios, responsables, anuncios y textos en un archivo para tener respaldo en OneDrive o cargarlo en otro equipo."
+        titulo="3. Carrusel de anuncios y copias de seguridad"
+        nota="Administra las tarjetas con imágenes de la portada o guarda un respaldo completo en tu computador."
       >
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-linea bg-fondo/60 p-3">
+          <div className="flex items-center gap-2.5">
+            <span className="grid size-8 place-items-center rounded-lg bg-uc-purple-light text-uc-purple-texto">
+              <Megaphone size={16} />
+            </span>
+            <div>
+              <p className="text-xs font-bold text-tinta">
+                Carrusel «Novedades y campañas» ({anuncios.length} tarjetas registradas)
+              </p>
+              <p className="text-[0.75rem] text-tinta-3">
+                Sube imágenes, reordena u oculta campañas visibles en la pantalla principal.
+              </p>
+            </div>
+          </div>
+          <Link to="/anuncios">
+            <Button tamano="sm" variante="outline" icono={Megaphone} tabIndex={-1}>
+              Gestionar anuncios
+            </Button>
+          </Link>
+        </div>
+
         <div className="flex flex-wrap items-center gap-3">
           <Button relieve icono={Download} onClick={exportarRespaldoTotal}>
             Descargar copia de seguridad
@@ -1056,8 +1560,8 @@ function ReglasYRespaldo() {
         }
       >
         <p className="text-sm text-tinta-2">
-          Se volverán a cargar los textos, programas, talleres y horas de alerta originales del
-          portal. Los centros y responsables no se verán afectados.
+          Se volverán a cargar todos los textos, programas, formulario y horas de alerta originales
+          del portal. Los centros y responsables no se verán afectados.
         </p>
       </Modal>
 
@@ -1119,6 +1623,7 @@ export function Administracion() {
   )
 
   const responsablesActivos = responsables.filter((r) => r.activo).length
+  const perfilesActivos = config.tiposSolicitante.filter((t) => t.activo).length
 
   const tabs: {
     id: TabAdmin
@@ -1144,14 +1649,21 @@ export function Administracion() {
     {
       id: 'contenidos',
       etiqueta: 'Programas y textos',
-      bajada: 'Información de PAEC, PARES, talleres y pasos',
-      resumen: `${config.programas.length} programas · ${config.talleresGrupales.length} talleres`,
+      bajada: 'PAEC, PARES, Asistencia Espiritual, talleres y pasos',
+      resumen: `3 áreas · ${config.talleresGrupales.length} talleres`,
       icono: FileText,
     },
     {
+      id: 'formulario',
+      etiqueta: 'Formulario de solicitud',
+      bajada: 'Tarjetas, opciones activas, apoyo espiritual y legales',
+      resumen: `${perfilesActivos} perfiles activos`,
+      icono: ClipboardEdit,
+    },
+    {
       id: 'reglas',
-      etiqueta: 'Reglas y respaldo',
-      bajada: 'Tiempos de alerta, avisos y copias de seguridad',
+      etiqueta: 'Identidad y reglas',
+      bajada: 'Portada, tiempos de alerta, anuncios y respaldos',
       resumen: `Alerta: ${config.horasEscalamiento}h`,
       icono: SlidersHorizontal,
     },
@@ -1162,17 +1674,16 @@ export function Administracion() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <PageHeader
           titulo="Administración"
-          subtitulo="Panel de configuración para el equipo de Humanización y Misión y RSE."
+          subtitulo={`Panel de control integral para ${config.nombreArea}.`}
         />
         <Button variante="outline" relieve icono={HelpCircle} onClick={() => setVerGuia(true)}>
           ¿Cómo usar esta pantalla?
         </Button>
       </div>
 
-      {/* Tarjetas de navegación claras e intuitivas */}
       <nav
         aria-label="Secciones de administración"
-        className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5"
       >
         {tabs.map(({ id, etiqueta, bajada, resumen, icono: Icono }) => {
           const activa = tab === id
@@ -1242,15 +1753,12 @@ export function Administracion() {
 
       {tab === 'equipo' && (
         <div className="space-y-4">
-          {/* Cuadro comparativo para evitar confusión entre Responsables y Usuarios */}
           <div className="grid gap-3 rounded-2xl border border-linea bg-superficie p-4 shadow-sm sm:grid-cols-2">
             <div className="rounded-xl bg-uc-blue-light/50 p-3">
-              <p className="text-xs font-bold text-uc-blue-texto">
-                ¿Qué es un «Responsable»?
-              </p>
+              <p className="text-xs font-bold text-uc-blue-texto">¿Qué es un «Responsable»?</p>
               <p className="mt-1 text-xs text-tinta-2">
-                Es la persona del equipo de Humanización a quien se le asigna una solicitud para
-                llamar y acompañar al paciente, familiar o colaborador.
+                Es la persona del equipo de {config.nombreArea} a quien se le asigna una solicitud
+                para llamar y acompañar al paciente, familiar o colaborador.
               </p>
             </div>
             <div className="rounded-xl bg-uc-purple-light/50 p-3">
@@ -1285,6 +1793,8 @@ export function Administracion() {
       )}
 
       {tab === 'contenidos' && <EditorContenidos />}
+
+      {tab === 'formulario' && <EditorFormulario />}
 
       {tab === 'reglas' && <ReglasYRespaldo />}
 

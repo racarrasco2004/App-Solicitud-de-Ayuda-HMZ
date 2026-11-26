@@ -1,11 +1,19 @@
-import { ClipboardPlus, HandHeart, Inbox, Pause, Phone, Play, UserCheck } from 'lucide-react'
+import {
+  ClipboardPlus,
+  HandHeart,
+  Inbox,
+  Megaphone,
+  Pause,
+  Phone,
+  Play,
+  UserCheck,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import edificio from '@/assets/edificio-uc-christus.jpg'
 import { CarruselAnuncios } from '@/components/CarruselAnuncios'
 import { ProgramasDesplegables } from '@/components/ProgramasDesplegables'
 import { Button } from '@/components/ui/Button'
-import { descripcionDeRol } from '@/config/navegacion'
 import { useAuth } from '@/context/AuthContext'
 import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
 import { cn } from '@/utils/cn'
@@ -28,10 +36,20 @@ function ComoAvanza() {
   const pasoActual = pasos[paso] ?? pasos[0]
 
   return (
-    <section aria-label="Cómo avanzará tu solicitud" className="rounded-3xl border border-linea bg-superficie p-5 shadow-sm">
+    <section
+      aria-label="Cómo avanzará tu solicitud"
+      className="rounded-3xl border border-linea bg-superficie p-5 shadow-sm"
+    >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <h2 className="fuente-cercana text-2xl font-bold text-uc-purple-texto">Cómo avanzará tu solicitud</h2>
-        <Button variante="outline" tamano="sm" icono={pausado ? Play : Pause} onClick={() => setPausado((p) => !p)}>
+        <h2 className="fuente-cercana text-2xl font-bold text-uc-purple-texto">
+          Cómo avanzará tu solicitud
+        </h2>
+        <Button
+          variante="outline"
+          tamano="sm"
+          icono={pausado ? Play : Pause}
+          onClick={() => setPausado((p) => !p)}
+        >
           {pausado ? 'Reanudar animación' : 'Pausar animación'}
         </Button>
       </div>
@@ -46,23 +64,39 @@ function ComoAvanza() {
                 aria-current={i === paso}
                 className={cn(
                   'relative flex w-full cursor-pointer items-center gap-2.5 overflow-hidden rounded-2xl border p-3 text-left transition-all duration-500 md:flex-col md:text-center',
-                  i === paso ? 'gradiente-marca border-transparent text-white' : 'border-linea bg-superficie-2 text-tinta-2',
+                  i === paso
+                    ? 'gradiente-marca border-transparent text-white'
+                    : 'border-linea bg-superficie-2 text-tinta-2',
                 )}
               >
-                <span className={cn('grid size-9 shrink-0 place-items-center rounded-full', i === paso ? 'bg-white/20' : 'bg-superficie text-uc-purple-texto')}>
+                <span
+                  className={cn(
+                    'grid size-9 shrink-0 place-items-center rounded-full',
+                    i === paso ? 'bg-white/20' : 'bg-superficie text-uc-purple-texto',
+                  )}
+                >
                   <Icono size={18} aria-hidden />
                 </span>
                 <span className="text-sm font-bold">
                   {i + 1}. {titulo}
                 </span>
-                {i === paso && !pausado && <span key={paso} className="barra-avance absolute inset-x-0 bottom-0 h-1 bg-white/70" aria-hidden />}
+                {i === paso && !pausado && (
+                  <span
+                    key={paso}
+                    className="barra-avance absolute inset-x-0 bottom-0 h-1 bg-white/70"
+                    aria-hidden
+                  />
+                )}
               </button>
             </li>
           )
         })}
       </ol>
       {pasoActual && (
-        <p className="mt-3 rounded-xl bg-uc-purple-light px-4 py-2.5 text-sm text-uc-purple-texto" aria-live="polite">
+        <p
+          className="mt-3 rounded-xl bg-uc-purple-light px-4 py-2.5 text-sm text-uc-purple-texto"
+          aria-live="polite"
+        >
           {pasoActual.texto}
         </p>
       )}
@@ -72,26 +106,56 @@ function ComoAvanza() {
 
 export function Inicio() {
   const { usuario } = useAuth()
+  const { config } = useConfiguracionPortal()
   if (!usuario) return null
 
   return (
     <div className="space-y-6">
       <header className="animar-aparecer gradiente-marca hero-tech destello relative overflow-hidden rounded-3xl p-6 text-white shadow-lg md:p-9">
         <span className="rejilla absolute inset-0" aria-hidden />
-        <img src={edificio} alt="" aria-hidden className="absolute inset-0 size-full object-cover opacity-15 mix-blend-luminosity" />
-        <span className="flotar absolute -top-10 right-10 size-44 rounded-full bg-white/10 blur-sm" aria-hidden />
-        <span className="flotar absolute -right-8 bottom-4 size-28 rounded-full bg-white/10" style={{ animationDelay: '-3s' }} aria-hidden />
+        <img
+          src={edificio}
+          alt=""
+          aria-hidden
+          className="absolute inset-0 size-full object-cover opacity-15 mix-blend-luminosity"
+        />
+        <span
+          className="flotar absolute -top-10 right-10 size-44 rounded-full bg-white/10 blur-sm"
+          aria-hidden
+        />
+        <span
+          className="flotar absolute -right-8 bottom-4 size-28 rounded-full bg-white/10"
+          style={{ animationDelay: '-3s' }}
+          aria-hidden
+        />
         <div className="relative max-w-2xl">
-          <h1 className="fuente-cercana text-4xl leading-tight font-bold md:text-5xl">Hola, {primerNombre(usuario.nombre)}</h1>
-          <p className="mt-2 text-base text-white/90">{descripcionDeRol[usuario.rol]}</p>
+          <p className="mb-1 text-xs font-bold tracking-wider text-white/80 uppercase">
+            {config.nombreArea}
+          </p>
+          <h1 className="fuente-cercana text-4xl leading-tight font-bold md:text-5xl">
+            Hola, {primerNombre(usuario.nombre)}
+          </h1>
+          <p className="mt-2 text-base text-white/90">{config.descripcionRoles[usuario.rol]}</p>
           <div className="mt-5 flex flex-wrap gap-2.5">
             <Link to="/nueva-solicitud">
-              <Button variante="outline" tamano="lg" relieve icono={HandHeart} tabIndex={-1} className="border-white !bg-white !text-uc-purple">
+              <Button
+                variante="outline"
+                tamano="lg"
+                relieve
+                icono={HandHeart}
+                tabIndex={-1}
+                className="border-white !bg-white !text-uc-purple"
+              >
                 Pedir apoyo
               </Button>
             </Link>
             <Link to="/#programas">
-              <Button variante="ghost" tamano="lg" tabIndex={-1} className="!text-white ring-1 ring-white/60 hover:!bg-white/15">
+              <Button
+                variante="ghost"
+                tamano="lg"
+                tabIndex={-1}
+                className="!text-white ring-1 ring-white/60 hover:!bg-white/15"
+              >
                 Conocer los programas
               </Button>
             </Link>
@@ -99,7 +163,19 @@ export function Inicio() {
         </div>
       </header>
 
-      <div className="animar-aparecer"><ComoAvanza /></div>
+      {config.avisoPortada && (
+        <div
+          role="status"
+          className="animar-aparecer flex items-start gap-3 rounded-2xl border border-uc-purple/25 bg-uc-purple-light px-4 py-3.5 text-sm text-uc-purple-texto shadow-xs"
+        >
+          <Megaphone size={18} className="mt-0.5 shrink-0" aria-hidden />
+          <p className="font-medium">{config.avisoPortada}</p>
+        </div>
+      )}
+
+      <div className="animar-aparecer">
+        <ComoAvanza />
+      </div>
 
       <ProgramasDesplegables />
 

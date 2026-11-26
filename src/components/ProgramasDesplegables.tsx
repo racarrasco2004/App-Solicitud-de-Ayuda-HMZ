@@ -1,7 +1,7 @@
 import { Check, ChevronDown, ExternalLink, HandHeart, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import espiritual from '@/assets/marca/area-espiritual.png'
+import espiritualImg from '@/assets/marca/area-espiritual.png'
 import { Button } from '@/components/ui/Button'
 import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
 import { cn } from '@/utils/cn'
@@ -37,9 +37,13 @@ export function ProgramasDesplegables() {
   const items: Item[] = useMemo(() => {
     const paec = config.programas.find((p) => p.sigla === 'PAEC') ?? config.programas[0]
     const pares = config.programas.find((p) => p.sigla === 'PARES') ?? config.programas[1]
+    const opcPaec = config.opcionesApoyo.find((o) => o.clave === 'PAEC')
+    const opcPares = config.opcionesApoyo.find((o) => o.clave === 'PARES')
 
-    return [
-      {
+    const lista: Item[] = []
+
+    if (opcPaec?.activo !== false) {
+      lista.push({
         id: 'paec',
         logo: paec.logo,
         alt: paec.nombre,
@@ -52,10 +56,15 @@ export function ProgramasDesplegables() {
               <p className="flex items-center gap-2 text-sm font-extrabold text-uc-purple-texto">
                 <Sparkles size={16} aria-hidden /> Espacio Libre de Estrés
               </p>
-              <p className="mt-1 mb-2.5 text-sm text-tinta-2">Talleres grupales de salud mental, prevención y promoción.</p>
+              <p className="mt-1 mb-2.5 text-sm text-tinta-2">
+                Talleres grupales de salud mental, prevención y promoción.
+              </p>
               <div className="flex flex-wrap gap-1.5">
                 {config.talleresGrupales.map((t) => (
-                  <span key={t} className="rounded-full bg-superficie px-3 py-1 text-xs font-semibold text-uc-purple-texto">
+                  <span
+                    key={t}
+                    className="rounded-full bg-superficie px-3 py-1 text-xs font-semibold text-uc-purple-texto"
+                  >
                     {t}
                   </span>
                 ))}
@@ -68,8 +77,11 @@ export function ProgramasDesplegables() {
             </a>
           </>
         ),
-      },
-      {
+      })
+    }
+
+    if (opcPares?.activo !== false) {
+      lista.push({
         id: 'pares',
         logo: pares.logo,
         alt: pares.nombre,
@@ -85,19 +97,19 @@ export function ProgramasDesplegables() {
             </Link>
           </>
         ),
-      },
-      {
+      })
+    }
+
+    if (config.espiritual.activo) {
+      lista.push({
         id: 'espiritual',
-        logo: espiritual,
-        alt: 'Área de Asistencia Espiritual y Pastoral',
-        resumen: 'Acompañamiento espiritual para pacientes, familias y colaboradores.',
+        logo: espiritualImg,
+        alt: config.espiritual.nombre,
+        resumen: config.espiritual.resumenInicio,
         detalle: (
           <>
-            <p className="text-sm text-tinta-2">
-              Puedes pedir acompañamiento espiritual para un paciente, su familia, para ti o para tu equipo, desde cualquier religión o creencia.
-              Lo entrega el Área de Asistencia Espiritual y Pastoral.
-            </p>
-            <Lista puntos={config.tiposApoyoEspiritual} />
+            <p className="text-sm text-tinta-2">{config.espiritual.descripcionInicio}</p>
+            {config.espiritual.puntos.length > 0 && <Lista puntos={config.espiritual.puntos} />}
             <Link to="/nueva-solicitud" className="self-start">
               <Button relieve icono={HandHeart} tabIndex={-1}>
                 Pedir acompañamiento
@@ -105,8 +117,10 @@ export function ProgramasDesplegables() {
             </Link>
           </>
         ),
-      },
-    ]
+      })
+    }
+
+    return lista
   }, [config])
 
   useEffect(() => {
@@ -114,9 +128,17 @@ export function ProgramasDesplegables() {
     if (items.some((i) => i.id === id)) setAbierto(id)
   }, [hash, items])
 
+  if (items.length === 0) return null
+
   return (
-    <section id="programas" aria-label="Nuestros programas" className="scroll-mt-24 rounded-3xl border border-linea bg-superficie p-5 shadow-sm">
-      <h2 className="fuente-cercana mb-2 text-2xl font-bold text-uc-purple-texto">Nuestros programas</h2>
+    <section
+      id="programas"
+      aria-label="Nuestros programas"
+      className="scroll-mt-24 rounded-3xl border border-linea bg-superficie p-5 shadow-sm"
+    >
+      <h2 className="fuente-cercana mb-2 text-2xl font-bold text-uc-purple-texto">
+        Nuestros programas
+      </h2>
       <ul className="divide-y divide-linea">
         {items.map((p) => {
           const activo = abierto === p.id
@@ -133,15 +155,31 @@ export function ProgramasDesplegables() {
                 )}
               >
                 <span className="flex h-14 w-32 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 ring-1 ring-linea">
-                  <img src={p.logo} alt={p.alt} className="h-full w-auto max-w-full object-contain" />
+                  <img
+                    src={p.logo}
+                    alt={p.alt}
+                    className="h-full w-auto max-w-full object-contain"
+                  />
                 </span>
                 <span className="flex-1 text-sm text-tinta-2">{p.resumen}</span>
-                <span className="hidden text-xs font-bold text-uc-purple-texto sm:inline">{activo ? 'Cerrar' : 'Ver más'}</span>
-                <ChevronDown size={20} className={cn('shrink-0 text-uc-purple-texto transition-transform duration-300', activo && 'rotate-180')} aria-hidden />
+                <span className="hidden text-xs font-bold text-uc-purple-texto sm:inline">
+                  {activo ? 'Cerrar' : 'Ver más'}
+                </span>
+                <ChevronDown
+                  size={20}
+                  className={cn(
+                    'shrink-0 text-uc-purple-texto transition-transform duration-300',
+                    activo && 'rotate-180',
+                  )}
+                  aria-hidden
+                />
               </button>
               <div
                 id={`detalle-${p.id}`}
-                className={cn('grid transition-[grid-template-rows] duration-300 ease-out', activo ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]')}
+                className={cn(
+                  'grid transition-[grid-template-rows] duration-300 ease-out',
+                  activo ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                )}
               >
                 <div className="overflow-hidden" inert={!activo}>
                   <div className="flex flex-col gap-4 px-2 pt-3 pb-5">{p.detalle}</div>

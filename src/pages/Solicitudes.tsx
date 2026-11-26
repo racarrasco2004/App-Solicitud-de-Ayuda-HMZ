@@ -1,5 +1,13 @@
-import { CircleCheck, ClipboardList, Clock, Hourglass, Search, TriangleAlert, Eye } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import {
+  CircleCheck,
+  ClipboardList,
+  Clock,
+  Eye,
+  Hourglass,
+  Search,
+  TriangleAlert,
+} from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Badge, EstadoBadge, ProgramaBadge, TipoBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -7,9 +15,11 @@ import { CampoLista } from '@/components/ui/Campos'
 import { EstadoVacio } from '@/components/ui/EstadoVacio'
 import { Kpi } from '@/components/ui/Kpi'
 import { PageHeader } from '@/components/ui/PageHeader'
-import { estaSinAtender, HORAS_ESCALAMIENTO } from '@/config/escalamiento'
-import { useSolicitudes } from '@/context/SolicitudesContext'
+import { horasDesde } from '@/config/escalamiento'
 import { useCatalogos } from '@/context/CatalogosContext'
+import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
+import { useSolicitudes } from '@/context/SolicitudesContext'
+import type { Solicitud } from '@/types'
 import { fechaCorta } from '@/utils/formato'
 
 const estados = ['Pendiente', 'En proceso', 'Cerrada']
@@ -19,6 +29,8 @@ const programasOpc = ['PAEC', 'PARES']
 export function Solicitudes() {
   const { solicitudes, cargando, error } = useSolicitudes()
   const { tiposDeCentro } = useCatalogos()
+  const { config } = useConfiguracionPortal()
+
   const [busca, setBusca] = useState('')
   const [estado, setEstado] = useState('')
   const [tipo, setTipo] = useState('')
@@ -26,15 +38,20 @@ export function Solicitudes() {
   const [centro, setCentro] = useState('')
   const [soloSinAtender, setSoloSinAtender] = useState(false)
 
+  const sinAtender = useCallback(
+    (s: Solicitud) => s.estado === 'Pendiente' && horasDesde(s.fecha) > config.horasEscalamiento,
+    [config.horasEscalamiento],
+  )
+
   const kpi = useMemo(
     () => ({
       total: solicitudes.length,
       pendientes: solicitudes.filter((s) => s.estado === 'Pendiente').length,
       proceso: solicitudes.filter((s) => s.estado === 'En proceso').length,
       cerradas: solicitudes.filter((s) => s.estado === 'Cerrada').length,
-      sinAtender: solicitudes.filter(estaSinAtender).length,
+      sinAtender: solicitudes.filter(sinAtender).length,
     }),
-    [solicitudes],
+    [solicitudes, sinAtender],
   )
 
   const filtradas = useMemo(() => {
@@ -45,14 +62,14 @@ export function Solicitudes() {
         (!tipo || s.tipoSolicitante === tipo) &&
         (!programa || s.programa === programa) &&
         (!centro || s.centro === centro) &&
-        (!soloSinAtender || estaSinAtender(s)) &&
+        (!soloSinAtender || sinAtender(s)) &&
         (!q ||
           [s.id, s.solicitante, s.subcentro, s.servicio, s.responsable ?? '']
             .join(' ')
             .toLowerCase()
             .includes(q)),
     )
-  }, [solicitudes, busca, estado, tipo, programa, centro, soloSinAtender])
+  }, [solicitudes, busca, estado, tipo, programa, centro, soloSinAtender, sinAtender])
 
   const hayFiltros = Boolean(busca || estado || tipo || programa || centro || soloSinAtender)
   const limpiar = () => {
@@ -66,7 +83,10 @@ export function Solicitudes() {
 
   return (
     <>
-      <PageHeader titulo="Solicitudes" subtitulo="Todas las solicitudes de apoyo que llegan al equipo de Humanización y Misión y RSE." />
+      <PageHeader
+        titulo="Solicitudes"
+        subtitulo={`Todas las solicitudes de apoyo que llegan al equipo de ${config.nombreArea}.`}
+      />
 
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Kpi icono={ClipboardList} etiqueta="Total" valor={kpi.total} />
@@ -78,15 +98,24 @@ export function Solicitudes() {
           onClick={() => setSoloSinAtender((v) => !v)}
           aria-pressed={soloSinAtender}
           className="col-span-2 cursor-pointer text-left lg:col-span-1"
-          title={`Pendientes por más de ${HORAS_ESCALAMIENTO} horas`}
+          title={`Pendientes por más de ${config.horasEscalamiento} horas`}
         >
-          <Kpi icono={TriangleAlert} etiqueta={`Sin atender (+${HORAS_ESCALAMIENTO} h)`} valor={kpi.sinAtender} tono="red" />
+          <Kpi
+            icono={TriangleAlert}
+            etiqueta={`Sin atender (+${config.horasEscalamiento} h)`}
+            valor={kpi.sinAtender}
+            tono="red"
+          />
         </button>
       </div>
 
       <section className="mb-4 rounded-2xl border border-linea bg-superficie p-4 shadow-sm">
         <div className="relative mb-3">
-          <Search size={16} aria-hidden className="absolute top-1/2 left-3 -translate-y-1/2 text-tinta-3" />
+          <Search
+            size={16}
+            aria-hidden
+            className="absolute top-1/2 left-3 -translate-y-1/2 text-tinta-3"
+          />
           <input
             type="search"
             value={busca}
@@ -97,10 +126,34 @@ export function Solicitudes() {
           />
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <CampoLista etiqueta="Estado" textoVacio="Todos" opciones={estados} value={estado} onChange={(e) => setEstado(e.target.value)} />
-          <CampoLista etiqueta="Apoyo para" textoVacio="Todos" opciones={tipos} value={tipo} onChange={(e) => setTipo(e.target.value)} />
-          <CampoLista etiqueta="Programa" textoVacio="Todos" opciones={programasOpc} value={programa} onChange={(e) => setPrograma(e.target.value)} />
-          <CampoLista etiqueta="Tipo de centro" textoVacio="Todos" opciones={tiposDeCentro()} value={centro} onChange={(e) => setCentro(e.target.value)} />
+          <CampoLista
+            etiqueta="Estado"
+            textoVacio="Todos"
+            opciones={estados}
+            value={estado}
+            onChange={(e) => setEstado(e.target.value)}
+          />
+          <CampoLista
+            etiqueta="Apoyo para"
+            textoVacio="Todos"
+            opciones={tipos}
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value)}
+          />
+          <CampoLista
+            etiqueta="Programa"
+            textoVacio="Todos"
+            opciones={programasOpc}
+            value={programa}
+            onChange={(e) => setPrograma(e.target.value)}
+          />
+          <CampoLista
+            etiqueta="Tipo de centro"
+            textoVacio="Todos"
+            opciones={tiposDeCentro()}
+            value={centro}
+            onChange={(e) => setCentro(e.target.value)}
+          />
         </div>
         <div className="mt-3 flex items-center justify-between text-xs text-tinta-3">
           <span>
@@ -115,7 +168,10 @@ export function Solicitudes() {
       </section>
 
       {error && (
-        <p role="alert" className="mb-3 rounded-lg border border-uc-red-borde bg-uc-red-light p-3 text-sm text-uc-red-texto">
+        <p
+          role="alert"
+          className="mb-3 rounded-lg border border-uc-red-borde bg-uc-red-light p-3 text-sm text-uc-red-texto"
+        >
           {error}
         </p>
       )}
@@ -124,28 +180,50 @@ export function Solicitudes() {
         {cargando ? (
           <p className="p-8 text-center text-sm text-tinta-3">Cargando…</p>
         ) : filtradas.length === 0 ? (
-          <EstadoVacio icono={ClipboardList} titulo="No hay solicitudes con esos filtros" texto="Prueba quitando algún filtro." />
+          <EstadoVacio
+            icono={ClipboardList}
+            titulo="No hay solicitudes con esos filtros"
+            texto="Prueba quitando algún filtro."
+          />
         ) : (
           <>
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-sm">
                 <thead className="encabezado-tabla">
                   <tr className="text-left text-[0.6875rem] font-bold tracking-wide text-uc-purple-texto uppercase">
-                    {['Código', 'Fecha', 'Apoyo para', 'Programa', 'Dónde', 'Estado', 'Responsable', ''].map((c) => (
-                      <th key={c} className="px-3 py-2.5">{c}</th>
+                    {[
+                      'Código',
+                      'Fecha',
+                      'Apoyo para',
+                      'Programa',
+                      'Dónde',
+                      'Estado',
+                      'Responsable',
+                      '',
+                    ].map((c) => (
+                      <th key={c} className="px-3 py-2.5">
+                        {c}
+                      </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {filtradas.map((s) => (
-                    <tr key={s.id} className="border-b border-linea last:border-0 hover:bg-uc-blue-light/50">
-                      <td className="px-3 py-3 font-mono font-bold whitespace-nowrap text-uc-purple-texto">{s.id}</td>
+                    <tr
+                      key={s.id}
+                      className="border-b border-linea last:border-0 hover:bg-uc-blue-light/50"
+                    >
+                      <td className="px-3 py-3 font-mono font-bold whitespace-nowrap text-uc-purple-texto">
+                        {s.id}
+                      </td>
                       <td className="px-3 py-3 whitespace-nowrap">{fechaCorta(s.fecha)}</td>
                       <td className="px-3 py-3">
                         <TipoBadge tipo={s.tipoSolicitante} />
                         <p className="mt-0.5 text-xs text-tinta-3">{s.solicitante}</p>
                       </td>
-                      <td className="px-3 py-3"><ProgramaBadge programa={s.programa} /></td>
+                      <td className="px-3 py-3">
+                        <ProgramaBadge programa={s.programa} />
+                      </td>
                       <td className="px-3 py-3">
                         <p className="font-semibold">{s.subcentro}</p>
                         <p className="text-xs text-tinta-3">{s.servicio}</p>
@@ -153,13 +231,15 @@ export function Solicitudes() {
                       <td className="px-3 py-3">
                         <div className="flex flex-col items-start gap-1">
                           <EstadoBadge estado={s.estado} />
-                          {estaSinAtender(s) && <Badge tono="red">Sin atender</Badge>}
+                          {sinAtender(s) && <Badge tono="red">Sin atender</Badge>}
                         </div>
                       </td>
                       <td className="px-3 py-3 text-tinta-2">{s.responsable ?? 'Por asignar'}</td>
                       <td className="px-3 py-3">
                         <Link to={`/solicitudes/${s.id}`}>
-                          <Button tamano="sm" variante="blue" relieve icono={Eye} tabIndex={-1}>Ver</Button>
+                          <Button tamano="sm" variante="blue" relieve icono={Eye} tabIndex={-1}>
+                            Ver
+                          </Button>
                         </Link>
                       </td>
                     </tr>
@@ -170,7 +250,10 @@ export function Solicitudes() {
             <ul className="divide-y divide-linea md:hidden">
               {filtradas.map((s) => (
                 <li key={s.id}>
-                  <Link to={`/solicitudes/${s.id}`} className="block space-y-1.5 p-4 hover:bg-superficie-2">
+                  <Link
+                    to={`/solicitudes/${s.id}`}
+                    className="block space-y-1.5 p-4 hover:bg-superficie-2"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-bold text-uc-purple-texto">{s.id}</span>
                       <EstadoBadge estado={s.estado} />
@@ -178,10 +261,15 @@ export function Solicitudes() {
                     <div className="flex flex-wrap gap-1.5">
                       <TipoBadge tipo={s.tipoSolicitante} />
                       {s.programa && <ProgramaBadge programa={s.programa} />}
-                      {estaSinAtender(s) && <Badge tono="red">Sin atender</Badge>}
+                      {sinAtender(s) && <Badge tono="red">Sin atender</Badge>}
                     </div>
-                    <p className="text-sm font-semibold">{s.subcentro} <span className="font-normal text-tinta-3">· {s.servicio}</span></p>
-                    <p className="text-xs text-tinta-3">{fechaCorta(s.fecha)} · {s.responsable ?? 'Por asignar'}</p>
+                    <p className="text-sm font-semibold">
+                      {s.subcentro}{' '}
+                      <span className="font-normal text-tinta-3">· {s.servicio}</span>
+                    </p>
+                    <p className="text-xs text-tinta-3">
+                      {fechaCorta(s.fecha)} · {s.responsable ?? 'Por asignar'}
+                    </p>
                   </Link>
                 </li>
               ))}

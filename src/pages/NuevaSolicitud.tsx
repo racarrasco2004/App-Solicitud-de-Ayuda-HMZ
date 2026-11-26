@@ -19,7 +19,6 @@ import espiritual from '@/assets/marca/area-espiritual.png'
 import { AvisoHorario } from '@/components/AvisoHorario'
 import { Button } from '@/components/ui/Button'
 import { CampoLista, CampoTexto, CampoTextoLargo } from '@/components/ui/Campos'
-import { AREAS } from '@/config/marca'
 import { useCatalogos } from '@/context/CatalogosContext'
 import { useConfiguracionPortal } from '@/context/ConfiguracionPortalContext'
 import { useSolicitudes } from '@/context/SolicitudesContext'
@@ -32,14 +31,22 @@ type Paso = 'donde' | 'quien' | 'fe' | 'apoyo' | 'contacto' | 'revisar'
 
 const OTRO_SERVICIO_OPCION = 'Otro (especifique)'
 
-const tipos: { valor: TipoSolicitante; titulo: string; texto: string; icono: LucideIcon }[] = [
-  { valor: 'Paciente', titulo: 'Para un paciente', texto: 'Una persona hospitalizada o en atención a quien quieres que acompañemos.', icono: HeartPulse },
-  { valor: 'Familiar', titulo: 'Para un familiar', texto: 'Alguien de la familia de un paciente, para que también reciba apoyo.', icono: Users },
-  { valor: 'Colaborador', titulo: 'Para mí', texto: 'Tú, que trabajas en la red y necesitas apoyo.', icono: UserRound },
-  { valor: 'Equipo', titulo: 'Para mi equipo', texto: 'Tu equipo de trabajo, para que lo acompañemos juntos.', icono: UsersRound },
-]
+const ICONO_POR_TIPO: Record<TipoSolicitante, LucideIcon> = {
+  Paciente: HeartPulse,
+  Familiar: Users,
+  Colaborador: UserRound,
+  Equipo: UsersRound,
+}
 
-function Pregunta({ titulo, texto, children }: { titulo: string; texto?: string; children: ReactNode }) {
+function Pregunta({
+  titulo,
+  texto,
+  children,
+}: {
+  titulo: string
+  texto?: string
+  children: ReactNode
+}) {
   return (
     <div className="animar-aparecer">
       <h2 className="text-xl font-extrabold text-uc-purple-texto">{titulo}</h2>
@@ -126,29 +133,26 @@ export function NuevaSolicitud() {
   const [errorEnvio, setErrorEnvio] = useState('')
   const [creada, setCreada] = useState<Solicitud | null>(null)
 
-  const opcionesApoyo: { clave: Apoyo; titulo: string; texto: string; logo?: string }[] = useMemo(() => {
+  const tiposVisibles = useMemo(
+    () =>
+      config.tiposSolicitante
+        .filter((t) => t.activo)
+        .map((t) => ({ ...t, icono: ICONO_POR_TIPO[t.valor] })),
+    [config.tiposSolicitante],
+  )
+
+  const opcionesApoyo = useMemo(() => {
     const paec = config.programas.find((p) => p.sigla === 'PAEC')
     const pares = config.programas.find((p) => p.sigla === 'PARES')
-    return [
-      {
-        clave: 'PAEC',
-        titulo: 'Apoyo emocional - Psicólogo/a',
-        texto: 'Conversar con un psicólogo/a y sentirte acompañado(a).',
-        logo: paec?.logo,
-      },
-      {
-        clave: 'PARES',
-        titulo: 'Evento difícil - PARES',
-        texto: 'Tú o alguien de tu equipo vivió un evento muy estresante o de seguridad grave.',
-        logo: pares?.logo,
-      },
-      {
-        clave: 'UIC',
-        titulo: 'Crisis en tu unidad - UIC',
-        texto: 'Quieres saber cómo pedir una intervención en crisis.',
-      },
-    ]
-  }, [config.programas])
+    return config.opcionesApoyo
+      .filter((o) => o.activo)
+      .map((o) => ({
+        clave: o.clave as Apoyo,
+        titulo: o.titulo,
+        texto: o.texto,
+        logo: o.clave === 'PAEC' ? paec?.logo : o.clave === 'PARES' ? pares?.logo : undefined,
+      }))
+  }, [config.opcionesApoyo, config.programas])
 
   const subcentros = useMemo(() => subcentrosDe(centro), [centro, subcentrosDe])
   const servicios = useMemo(() => {
@@ -164,10 +168,16 @@ export function NuevaSolicitud() {
 
   const esPersonal = tipo === 'Paciente' || tipo === 'Familiar'
   const esColaborador = tipo === 'Colaborador' || tipo === 'Equipo'
-  const esPares = esColaborador && apoyo === 'PARES'
+
+  const mostrarBloqueEspiritualColab =
+    esColaborador &&
+    ((config.reglaEspiritualColaborador === 'solo-pares' && apoyo === 'PARES') ||
+      config.reglaEspiritualColaborador === 'todos-colaboradores')
+
   const redirige = tipo === 'Colaborador' && apoyo === 'PAEC'
   const soloInforma = esColaborador && apoyo === 'UIC'
-  const guarda = esPersonal || (esColaborador && (apoyo === 'PARES' || (apoyo === 'PAEC' && !redirige)))
+  const guarda =
+    esPersonal || (esColaborador && (apoyo === 'PARES' || (apoyo === 'PAEC' && !redirige)))
 
   const pasos: Paso[] = ['donde', 'quien']
   if (esPersonal) pasos.push('fe', 'contacto', 'revisar')
@@ -190,7 +200,7 @@ export function NuevaSolicitud() {
       ...(esPersonal ? { personaApoyo: validarNombre(personaApoyo) } : {}),
       nombre: validarNombre(nombre),
       telefono: validarTelefono(telefono),
-      ...(esPares && deseaEspiritual && !tipoApoyoEspiritual
+      ...(mostrarBloqueEspiritualColab && deseaEspiritual && !tipoApoyoEspiritual
         ? { tipoApoyoEspiritual: 'Selecciona el tipo de apoyo espiritual que prefieres.' }
         : {}),
     },
@@ -214,7 +224,10 @@ export function NuevaSolicitud() {
 
   const seleccionarApoyo = (clave: Apoyo) => {
     setApoyo(clave)
-    if (clave !== 'PARES') {
+    const seguiraMostrandoEspiritual =
+      (config.reglaEspiritualColaborador === 'solo-pares' && clave === 'PARES') ||
+      config.reglaEspiritualColaborador === 'todos-colaboradores'
+    if (!seguiraMostrandoEspiritual) {
       setDeseaEspiritual(false)
       setTipoApoyoEspiritual('')
       setReligion('')
@@ -227,7 +240,7 @@ export function NuevaSolicitud() {
     setEnviando(true)
     setErrorEnvio('')
     try {
-      const incluyeEspiritual = esPares && deseaEspiritual
+      const incluyeEspiritual = mostrarBloqueEspiritualColab && deseaEspiritual
 
       const nueva = await crear({
         programa: esColaborador && apoyo !== 'UIC' && apoyo ? apoyo : null,
@@ -261,15 +274,16 @@ export function NuevaSolicitud() {
           </span>
         </span>
         <h1 className="text-2xl font-extrabold text-tinta">Gracias por escribirnos</h1>
-        <p className="mt-2 text-sm text-tinta-2">
-          Recibimos tu solicitud. El equipo de {AREAS} se comunicará contigo.
-        </p>
+        <p className="mt-2 text-sm text-tinta-2">{config.mensajeConfirmacion}</p>
+        <p className="mt-1 text-xs font-semibold text-uc-purple-texto">{config.nombreArea}</p>
         <AvisoHorario className="mt-4 text-left" />
-        <p className="mt-5 text-sm text-tinta-2">
-          Si quieres agregar una nueva solicitud, no dudes en hacerla.
-        </p>
+        {config.contactoSoporte && (
+          <p className="mt-3 text-xs text-tinta-3">{config.contactoSoporte}</p>
+        )}
         <p className="mt-5 text-xs font-bold tracking-wide text-tinta-3 uppercase">Tu código</p>
-        <p className="font-mono text-2xl font-extrabold tracking-tight text-uc-purple-texto">{creada.id}</p>
+        <p className="font-mono text-2xl font-extrabold tracking-tight text-uc-purple-texto">
+          {creada.id}
+        </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link to="/">
             <Button relieve>Volver al inicio</Button>
@@ -290,7 +304,8 @@ export function NuevaSolicitud() {
       <header className="mb-4 text-center">
         <h1 className="text-2xl font-extrabold text-uc-purple-texto">Estamos para acompañarte</h1>
         <p className="mt-1 text-sm text-tinta-2">
-          Cuéntanos con calma lo que necesitas. Son pocas preguntas y puedes volver atrás cuando quieras.
+          Cuéntanos con calma lo que necesitas. Son pocas preguntas y puedes volver atrás cuando
+          quieras.
         </p>
         <AvisoHorario className="mt-3 text-left" />
       </header>
@@ -371,9 +386,12 @@ export function NuevaSolicitud() {
         )}
 
         {paso === 'quien' && (
-          <Pregunta titulo="¿Para quién pides apoyo?" texto="Elige a quién quieres que acompañemos.">
+          <Pregunta
+            titulo="¿Para quién pides apoyo?"
+            texto="Elige a quién quieres que acompañemos."
+          >
             <div className="grid gap-2.5 sm:grid-cols-2">
-              {tipos.map((t) => (
+              {tiposVisibles.map((t) => (
                 <Opcion
                   key={t.valor}
                   activa={tipo === t.valor}
@@ -400,11 +418,13 @@ export function NuevaSolicitud() {
             texto="Si no lo sabes, elige «Prefiero no decirlo»."
           >
             <div className="flex gap-3 rounded-2xl border border-uc-purple/20 bg-uc-purple-light p-4 text-sm text-uc-purple-texto">
-              <img src={espiritual} alt="Área de Asistencia Espiritual y Pastoral" className="h-14 w-28 shrink-0 rounded-xl bg-white object-contain p-1" />
+              <img
+                src={espiritual}
+                alt={config.espiritual.nombre}
+                className="h-14 w-28 shrink-0 rounded-xl bg-white object-contain p-1"
+              />
               <p>
-                <strong>¿Qué es el apoyo espiritual?</strong> Es un acompañamiento que respeta la fe, las creencias y los valores de cada persona,
-                desde cualquier religión o sin una en particular. Te escucha, te acompaña y, si lo deseas, comparte un momento de oración o de silencio.
-                Lo entrega el Área de Asistencia Espiritual y Pastoral.
+                <strong>¿Qué es el apoyo espiritual?</strong> {config.espiritual.explicacionFormulario}
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -417,7 +437,10 @@ export function NuevaSolicitud() {
         )}
 
         {paso === 'apoyo' && (
-          <Pregunta titulo="¿Qué tipo de apoyo necesitas?" texto="Elige lo que más se parezca a tu situación.">
+          <Pregunta
+            titulo="¿Qué tipo de apoyo necesitas?"
+            texto="Elige lo que más se parezca a tu situación."
+          >
             {opcionesApoyo.map((o) => (
               <Opcion
                 key={o.clave}
@@ -431,13 +454,17 @@ export function NuevaSolicitud() {
             <Error texto={ver('apoyo')} />
             {apoyo && apoyo !== 'UIC' && (
               <p className="rounded-xl bg-superficie-2 px-3 py-2 text-xs text-tinta-2">
-                <strong>{apoyo}</strong>: {config.programas.find((p) => p.sigla === apoyo)?.nombre}.{' '}
+                <strong>{apoyo}</strong>:{' '}
+                {config.programas.find((p) => p.sigla === apoyo)?.nombre}.{' '}
                 {config.programas.find((p) => p.sigla === apoyo)?.descripcion}
               </p>
             )}
             {redirige && (
               <div className="rounded-2xl border border-uc-blue-borde bg-uc-blue-light p-4 text-sm text-uc-blue-texto">
-                <p className="mb-3">Este apoyo se agenda en un sitio aparte. Te llevamos allí y aquí no se guarda nada.</p>
+                <p className="mb-3">
+                  Este apoyo se agenda en un sitio aparte. Te llevamos allí y aquí no se guarda
+                  nada.
+                </p>
                 <a href={config.formularioPaecUrl} target="_blank" rel="noreferrer">
                   <Button variante="blue" relieve icono={ExternalLink} tabIndex={-1}>
                     Ir a la agenda de apoyo
@@ -456,7 +483,11 @@ export function NuevaSolicitud() {
 
         {paso === 'contacto' && (
           <Pregunta
-            titulo={esPersonal ? '¿A quién vamos a acompañar y cómo te contactamos?' : '¿Cómo te contactamos?'}
+            titulo={
+              esPersonal
+                ? '¿A quién vamos a acompañar y cómo te contactamos?'
+                : '¿Cómo te contactamos?'
+            }
             texto="Usaremos estos datos solo para coordinar el acompañamiento."
           >
             {esPersonal && (
@@ -487,8 +518,7 @@ export function NuevaSolicitud() {
               onChange={(e) => setTelefono(e.target.value)}
             />
 
-            {/* Bloque opcional de apoyo espiritual exclusivo para PARES */}
-            {esPares && (
+            {mostrarBloqueEspiritualColab && (
               <div className="rounded-2xl border border-uc-purple/25 bg-fondo/70 p-4">
                 <div className="flex items-start gap-2.5">
                   <span className="grid size-8 shrink-0 place-items-center rounded-full bg-uc-purple-light text-uc-purple-texto">
@@ -499,7 +529,7 @@ export function NuevaSolicitud() {
                       ¿Deseas apoyo espiritual? (opcional)
                     </p>
                     <p className="mt-0.5 text-xs text-tinta-3">
-                      El Área de Asistencia Espiritual y Pastoral también puede acompañarte respetando tus creencias.
+                      {config.espiritual.nombre} también puede acompañarte respetando tus creencias.
                     </p>
                   </div>
                 </div>
@@ -592,7 +622,10 @@ export function NuevaSolicitud() {
         )}
 
         {paso === 'revisar' && (
-          <Pregunta titulo="Revisa y envía" texto="Si algo no está bien, puedes volver atrás y cambiarlo.">
+          <Pregunta
+            titulo="Revisa y envía"
+            texto="Si algo no está bien, puedes volver atrás y cambiarlo."
+          >
             <dl className="divide-y divide-linea rounded-2xl border border-linea text-sm">
               {[
                 ['Dónde', `${subcentro} · ${servicioFinal}`],
@@ -600,7 +633,7 @@ export function NuevaSolicitud() {
                 esPersonal
                   ? ['Fe o creencia de la persona', religion]
                   : ['Apoyo', opcionesApoyo.find((o) => o.clave === apoyo)?.titulo ?? ''],
-                ...(esPares && deseaEspiritual && tipoApoyoEspiritual
+                ...(mostrarBloqueEspiritualColab && deseaEspiritual && tipoApoyoEspiritual
                   ? [
                       [
                         'Apoyo espiritual',
@@ -613,20 +646,28 @@ export function NuevaSolicitud() {
                 ...(comentario ? [['Comentario', comentario]] : []),
               ].map(([k, v]) => (
                 <div key={k} className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:gap-4">
-                  <dt className="w-36 shrink-0 text-xs font-bold tracking-wide text-tinta-3 uppercase">{k}</dt>
+                  <dt className="w-36 shrink-0 text-xs font-bold tracking-wide text-tinta-3 uppercase">
+                    {k}
+                  </dt>
                   <dd className="text-tinta">{v}</dd>
                 </div>
               ))}
             </dl>
             <label className="flex cursor-pointer items-start gap-2 text-sm text-tinta-2">
-              <input type="checkbox" checked={consiente} onChange={(e) => setConsiente(e.target.checked)} className="mt-1 accent-uc-purple" />
-              {esPersonal
-                ? 'Confirmo que la persona sabe de esta solicitud y está de acuerdo en recibir acompañamiento, y acepto que Humanización y Misión y RSE use estos datos para contactarme.'
-                : 'Acepto que el equipo de Humanización y Misión y RSE use estos datos para contactarme.'}
+              <input
+                type="checkbox"
+                checked={consiente}
+                onChange={(e) => setConsiente(e.target.checked)}
+                className="mt-1 accent-uc-purple"
+              />
+              {esPersonal ? config.consentimientoPersonal : config.consentimientoColaborador}
             </label>
             <Error texto={ver('consiente')} />
             {errorEnvio && (
-              <p role="alert" className="rounded-lg border border-uc-red-borde bg-uc-red-light p-3 text-sm text-uc-red-texto">
+              <p
+                role="alert"
+                className="rounded-lg border border-uc-red-borde bg-uc-red-light p-3 text-sm text-uc-red-texto"
+              >
                 {errorEnvio}
               </p>
             )}
